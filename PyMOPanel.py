@@ -237,7 +237,7 @@ class Demo:
 
     def demoThreadedLedChanges(self):
         while self._ledsDemoRunning:
-            for led in range(1,4):
+            for led in range(3):
                 self._panel.setLedOff(led)
                 time.sleep(0.2)
                 self._panel.setLedYellow(led)
@@ -363,6 +363,9 @@ def main(port):
     time.sleep(2)
     demo.stopLedsDemoThread()
     myPanel.setDisplayOff()
+    time.sleep(1)
+    for i in range(3):
+        myPanel.setLedOff(i)
 
 if __name__ == '__main__':
     port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'
