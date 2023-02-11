@@ -6,6 +6,8 @@ from math import pi, sin, cos
 from threading import Thread, Lock, current_thread
 from sys import argv,stdout
 import traceback
+from PIL import Image
+from random import random
 
 class MatrixOrbital:
     class Constants:
@@ -38,21 +40,53 @@ class MatrixOrbital:
     def dumpFileFromFilesystem(self, fontNoBitmap, fileId, outputFilename):
         self._serialDriver.reset_input_buffer()
         self.sendBytes([0xfe,0xb2, 0 if fontNoBitmap else 1, fileId])
-        fileSizeInBytes = int.from_bytes(self._serialDriver.read(4), byteorder="little", signed=False) - 2
-        width  = int.from_bytes(self._serialDriver.read(1), byteorder="little", signed=False)
-        height = int.from_bytes(self._serialDriver.read(1), byteorder="little", signed=False)
-        print("Downloading {} {} from panel filesystem to {}...".format("font" if fontNoBitmap else "bitmap", fileId, outputFilename))
-        open(outputFilename+".info", "w").writelines(["width: {}\n".format(width), "height: {}\n".format(height)])
-        open(outputFilename, "wb").write(self._serialDriver.read(fileSizeInBytes))
-        print("done!")
+        fileSizeInBytes = int.from_bytes(self._serialDriver.read(4), byteorder='little', signed=False) - 2
+        width  = int.from_bytes(self._serialDriver.read(1), byteorder='little', signed=False)
+        height = int.from_bytes(self._serialDriver.read(1), byteorder='little', signed=False)
+        print('Downloading {} {} from panel filesystem to {}...'.format('font' if fontNoBitmap else 'bitmap', fileId, outputFilename))
+        open(outputFilename+'.info', 'w').writelines(['width: {}\n'.format(width), 'height: {}\n'.format(height)])
+        open(outputFilename, 'wb').write(self._serialDriver.read(fileSizeInBytes))
+        print('done!')
 
     def dumpCompleteFilesystem(self, outputFilename):
         self._serialDriver.reset_input_buffer()
         self.sendBytes([0xfe, 0x30])
-        filesystemSize = int.from_bytes(self._serialDriver.read(4), byteorder="little", signed=False)
-        print("Dumping panel filesystem to {}...".format(outputFilename))
-        open(outputFilename, "wb").write(self._serialDriver.read(filesystemSize))
-        print("done!")
+        filesystemSize = int.from_bytes(self._serialDriver.read(4), byteorder='little', signed=False)
+        print('Dumping panel filesystem to {}...'.format(outputFilename))
+        open(outputFilename, 'wb').write(self._serialDriver.read(filesystemSize))
+        print('done!')
+
+    def drawBMP(self, inputFilename, x0=0, y0=0):
+        time.sleep(0.3) # otherwise transfer may fail
+        img = Image.open(inputFilename)
+        width = img.width
+        height = img.height
+        if img.mode != 'L' and img.mode != 'P':
+            raise Exception('only 8 bit images are currently accepted')
+
+        buffer_8_bit = img.tobytes()
+        if len(buffer_8_bit) % 8 != 0:
+            raise Exception('bitmap size should be a multiple of the used depth')
+
+        # init array with header
+        outputArray = bytearray(b'\xfe\x64')
+        outputArray += x0.to_bytes(1,'big')
+        outputArray += y0.to_bytes(1,'big')
+        outputArray += width.to_bytes(1,'big')
+        outputArray += height.to_bytes(1,'big')
+        # pack input 8 bit image to 1 bit monocromatic pixels
+        for byteNr in range(len(buffer_8_bit)>>3):
+            outputArray += ((1   if buffer_8_bit[byteNr*8]>64 else 0) +
+                            (2   if buffer_8_bit[byteNr*8+1]>64 else 0) +
+                            (4   if buffer_8_bit[byteNr*8+2]>64 else 0) +
+                            (8   if buffer_8_bit[byteNr*8+3]>64 else 0) +
+                            (16  if buffer_8_bit[byteNr*8+4]>64 else 0) +
+                            (32  if buffer_8_bit[byteNr*8+5]>64 else 0) +
+                            (64  if buffer_8_bit[byteNr*8+6]>64 else 0) +
+                            (128 if buffer_8_bit[byteNr*8+7]>64 else 0)).to_bytes(1,'little')
+        # send data
+        #print(str(outputArray))
+        self.sendBytes(bytes(outputArray))
 
     def setGPOState(self, gpio, value):
         self.sendBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
@@ -103,7 +137,7 @@ class MatrixOrbital:
         self.sendBytes([0xfe,0x47,col,row])
 
     def writeText(self, text):
-        self.sendBytes(bytes(text, "UTF-8"))
+        self.sendBytes(bytes(text, 'UTF-8'))
 
     def setSendAllKeyPresses(self):
         self.sendBytes([0xfe, 0x41])
@@ -116,7 +150,7 @@ class MatrixOrbital:
         self._contrast = contrast
         self.sendBytes([0xfe, 0x50, contrast])
 
-    def drawSpiral(self, color, centerPos, maxRadius, incRadius = 0.03, incAngle = pi/180, startingAngle =0):
+    def drawSpiral(self, color, centerPos, maxRadius, incRadius = 0.03, incAngle = pi/100, startingAngle =0):
         self.setDrawingColor(color)
         angle = startingAngle
         radius = 0
@@ -134,7 +168,7 @@ class Demo:
     class ThreadSerialListener(serial.threaded.Protocol):
         _panel = None
         def connection_made(self, transport):
-            print("port connected")
+            print('port connected')
         def data_received(self, data):
             for currentByte in bytearray(data):
                 if currentByte == MatrixOrbital.Constants.UP_KEY:
@@ -185,7 +219,7 @@ class Demo:
 
     def runDemoPressedKeys(self, charsCount):
         self._panel.clearScreen()
-        self._panel.writeText("Press {} keys to finish".format(charsCount))
+        self._panel.writeText('Press {} keys to finish'.format(charsCount))
         self._panel.setSendAllKeyPresses()
         for i in range(charsCount):
             char = self._panel._serialDriver.read(1)
@@ -198,8 +232,13 @@ class Demo:
         self._panel.clearScreen()
         self._panel.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2), int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT)
         sign = 1
-        for offsetX in [15,-40,60,-70]:
-            self._panel.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2) + offsetX, int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT, incAngle = sign * pi/180)
+        for i in range(20):
+            offsetX = (random()*150)-75
+            self._panel.drawSpiral(200, 
+                                   [int(MatrixOrbital.Constants.PANEL_WIDTH/2) + offsetX, int(MatrixOrbital.Constants.PANEL_HEIGHT/2)],
+                                   MatrixOrbital.Constants.PANEL_HEIGHT,
+                                   incAngle = sign * pi / (50 + random() * 100),
+                                   incRadius = 0.02 + random()/5)
             sign = sign * -1
 
 
@@ -208,10 +247,10 @@ def main(port):
     demo = Demo(myPanel)
 
     # dump complete filesystem to a file
-    myPanel.dumpCompleteFilesystem("filesystem.data")
+    #myPanel.dumpCompleteFilesystem('filesystem.data')
 
     # dump bitmap 1 to a file
-    myPanel.dumpFileFromFilesystem(0, 1, "bitmap1_output.data")
+    #myPanel.dumpFileFromFilesystem(0, 1, 'bitmap1_output.data')
 
     # enable controlling brightness and contrast by the keyboard
     demo.enableKeyboardControllingContrastAndBrightness()
@@ -220,7 +259,7 @@ def main(port):
     myPanel.clearScreen()
     
     # simple text
-    myPanel.writeText("hello world!")
+    myPanel.writeText('hello world!\n')
     time.sleep(1)
 
     # start blinking leds on the background
@@ -238,13 +277,14 @@ def main(port):
     # start keyboard demo
     demo.runDemoPressedKeys(8)
 
+    # show a BMP and exit
     myPanel.clearScreen()
-    myPanel.writeText("good bye!")
     demo.startLedsDemoThread()
+    myPanel.drawBMP('./goodbye.bmp')
     time.sleep(2)
     demo.stopLedsDemoThread()
 
-if __name__ == "__main__":
-    port = argv[1] if len(argv) == 2 else "/dev/ttyUSB0"
+if __name__ == '__main__':
+    port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'
     main(port=port)
 
