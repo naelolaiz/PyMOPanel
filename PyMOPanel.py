@@ -2,7 +2,7 @@
 import serial
 import serial.threaded
 import time
-from math import pi, sin, cos
+from math import pi, sin, cos 
 from threading import Thread, Lock, current_thread
 from sys import argv,stdout
 import traceback
@@ -13,6 +13,7 @@ class MatrixOrbital:
     class Constants:
         PANEL_WIDTH  = 192
         PANEL_HEIGHT = 64
+        MAX_NUMBER_OF_BARS = 16
         UP_KEY          = 0x42
         DOWN_KEY        = 0x48
         LEFT_KEY        = 0x44
@@ -31,12 +32,26 @@ class MatrixOrbital:
             for i in range(dataSize):
                 sum += inputByteArray[base+i]
             return sum/dataSize
+    class BarGraph:
+        def __init__(self, x0, y0, x1, y1, direction):
+            self._x0 = x0
+            self._y0 = y0
+            self._x1 = x1
+            self._y1 = y1
+            self._direction = direction
+            self._delta = abs(x0-x1) if direction == 'HorizontalLeft' or direction == 'HorizontalRight' else abs(y0-y1)
+            self._value = 0.
+        def setValue(self, value):
+            self._value = value
+        def getValueInPixels(self):
+            return int(self._value * self._delta)
 
     def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
         self._port = port
         self._baudrate = baudrate
         self._serialSendLock = Lock()
         self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
+        self._barGraphs = []
         self.setBrightness(200)
         self.setContrast(128)
 
@@ -62,6 +77,24 @@ class MatrixOrbital:
         print('Dumping panel filesystem to {}...'.format(outputFilename))
         open(outputFilename, 'wb').write(self._serialDriver.read(filesystemSize))
         print('done!')
+
+    
+    # direction: Vertical{Left|Right}, Horizontal{Bottom|Top}
+    def addBarGraph(self, x0, y0, x1, y1, direction):
+        if len(self._barGraphs) == MatrixOrbital.Constants.MAX_NUMBER_OF_BARS:
+            raise Exception("Cannot have more than {} bars".format(MatrixOrbital.Constants.MAX_NUMBER_OF_BARS))
+        self._barGraphs.append(MatrixOrbital.BarGraph(x0,y0,x1,y1,direction))
+
+        index = len(self._barGraphs)-1
+        directionEnumValue = 0 if direction == "VerticalBottom" else 1 if direction == "HorizontalLeft" else 2 if direction == "VerticalTop" else 3
+
+        # init bar graph
+        self.sendBytes([0xfe, 0x67, index, directionEnumValue, x0, y0, x1, y1])
+        return index
+
+    def setBarGraphValue(self, index, value):
+        self._barGraphs[index].setValue(value)
+        self.sendBytes([0xfe, 0x69, index, self._barGraphs[index].getValueInPixels()])
 
     def drawBMP(self, inputFilename, x0=0, y0=0):
         time.sleep(0.2) # otherwise transfer may fail
@@ -259,6 +292,20 @@ class Demo:
                                    incRadius = 0.02 + random()/4)
             sign = sign * -1
 
+    def runDemoBarGraphs(self):
+        self._panel.clearScreen()
+        time.sleep(0.2)
+        numberOfBars = MatrixOrbital.Constants.MAX_NUMBER_OF_BARS
+        deltaX = int(MatrixOrbital.Constants.PANEL_WIDTH / numberOfBars)
+        for i in range(0, MatrixOrbital.Constants.PANEL_WIDTH, deltaX):
+            index = self._panel.addBarGraph(i,          0,
+                                            i+deltaX-1, MatrixOrbital.Constants.PANEL_HEIGHT,
+                                            "VerticalBottom")
+
+        for i in range(200):
+            bar = int(random()*numberOfBars)
+            self._panel.setBarGraphValue(bar, random())
+            time.sleep(0.03)
 
 def main(port):
     myPanel = MatrixOrbital(port=port)
@@ -280,13 +327,18 @@ def main(port):
     myPanel.writeText('hello world!\n')
     time.sleep(2)
     myPanel.clearScreen()
+
     # start blinking leds on the background
     demo.startLedsDemoThread()
     time.sleep(1)
+
     # stop leds blinking before the animation
     demo.stopLedsDemoThread()
     myPanel.drawBMP('gif/resized_scissors.gif', x0=40)
     demo.startLedsDemoThread()
+
+    # bar graphs
+    demo.runDemoBarGraphs()
 
     # draw some spirals
     demo.runDemoSpirals()
