@@ -7,7 +7,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
 
 TODO: 
  - separate Driver from Controller logic (the threads for keyboard and leds should be outside from the driver)
- - 
+ - ls
  - .data to screen/filesystem
  - .data to .bmp?
  - .bmp to .data?
