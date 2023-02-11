@@ -76,14 +76,14 @@ class MatrixOrbital:
         outputArray += height.to_bytes(1,'big')
         # pack input 8 bit image to 1 bit monocromatic pixels
         for byteNr in range(len(buffer_8_bit)>>3):
-            outputArray += ((1   if buffer_8_bit[byteNr*8]>64 else 0) +
-                            (2   if buffer_8_bit[byteNr*8+1]>64 else 0) +
-                            (4   if buffer_8_bit[byteNr*8+2]>64 else 0) +
-                            (8   if buffer_8_bit[byteNr*8+3]>64 else 0) +
-                            (16  if buffer_8_bit[byteNr*8+4]>64 else 0) +
-                            (32  if buffer_8_bit[byteNr*8+5]>64 else 0) +
-                            (64  if buffer_8_bit[byteNr*8+6]>64 else 0) +
-                            (128 if buffer_8_bit[byteNr*8+7]>64 else 0)).to_bytes(1,'little')
+            outputArray += ((128 if buffer_8_bit[byteNr*8]>64 else 0) +
+                            (64  if buffer_8_bit[byteNr*8+1]>64 else 0) +
+                            (32  if buffer_8_bit[byteNr*8+2]>64 else 0) +
+                            (16  if buffer_8_bit[byteNr*8+3]>64 else 0) +
+                            (8   if buffer_8_bit[byteNr*8+4]>64 else 0) +
+                            (4   if buffer_8_bit[byteNr*8+5]>64 else 0) +
+                            (2   if buffer_8_bit[byteNr*8+6]>64 else 0) +
+                            (1   if buffer_8_bit[byteNr*8+7]>64 else 0)).to_bytes(1,'little')
         # send data
         #print(str(outputArray))
         self.sendBytes(bytes(outputArray))
