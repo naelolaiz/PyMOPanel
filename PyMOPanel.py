@@ -3,7 +3,7 @@ import serial
 import serial.threaded
 import time
 from math import pi, sin, cos
-from threading import Thread, Lock
+from threading import Thread, Lock, current_thread
 from sys import argv,stdout
 import traceback
 
@@ -23,55 +23,15 @@ class MatrixOrbital:
         def sanitizeUint8(value):
             return max(0,value) & 0xFF
 
-    class State:
-        def __init__(self):
-            self._serialSendLock = Lock()
-            self._ledsDemoRunning = False
-
-    class ThreadSerialListener(serial.threaded.Protocol):
-        _panel = None
-        def connection_made(self, transport):
-            print("port connected")
-        def data_received(self, data):
-            for currentByte in bytearray(data):
-                if currentByte == MatrixOrbital.Constants.UP_KEY:
-                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness + 20))
-                elif currentByte == MatrixOrbital.Constants.DOWN_KEY:
-                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness - 20))
-                elif currentByte == MatrixOrbital.Constants.LEFT_KEY:
-                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast - 5))
-                elif currentByte == MatrixOrbital.Constants.RIGHT_KEY:
-                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast + 5))
-        def connection_lost(self, exc):
-            if exc:
-                print(str(exc))
-                traceback.print_exc(exc)
-            print('port closed\n')
-
-    def demoThreadedLedChanges(self):
-        while self._state._ledsDemoRunning:
-            for led in range(1,4):
-                self.setLedOff(led)
-                time.sleep(0.3)
-                self.setLedYellow(led)
-                time.sleep(0.3)
-                self.setLedRed(led)
-                time.sleep(0.3)
-                self.setLedGreen(led)
-                time.sleep(0.3)
-
     def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
         self._port = port
         self._baudrate = baudrate
         self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
-        self._state = MatrixOrbital.State()
-        self.ThreadSerialListener._panel = self
-        self._listener = serial.threaded.ReaderThread(self._serialDriver, self.ThreadSerialListener)
         self.setBrightness(200)
         self.setContrast(128)
 
     def sendBytes(self, buffer):
-        with self._state._serialSendLock:
+        with self._serialSendLock:
             self._serialDriver.write(buffer)
 
     def dumpFileFromFilesystem(self, fontNoBitmap, fileId, outputFilename):
@@ -84,20 +44,6 @@ class MatrixOrbital:
         open(outputFilename+".info", "w").writelines(["width: {}\n".format(width), "height: {}\n".format(height)])
         open(outputFilename, "wb").write(self._serialDriver.read(fileSizeInBytes))
         print("done!")
-
-    def startKeyboardControlThread(self):
-        self._listener.start()
-
-    def stopKeyboardControlThread(self):
-        self._listener.stop()
-
-    def startLedsDemoThread(self):
-        self._state._ledsDemoRunning = True
-        self._threadLedsDemo = Thread(target=self.demoThreadedLedChanges)
-        self._threadLedsDemo.start()
-
-    def stopLedsDemoThread(self):
-        self._state._ledsDemoRunning = False
 
     def setGPOState(self, gpio, value):
         self.sendBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
@@ -174,52 +120,108 @@ class MatrixOrbital:
             radius += incRadius
             angle +=incAngle
 
-    def dumpInput(self, charsCount):
-        self.writeText("Press {} keys to finish".format(charsCount))
-        self.setSendAllKeyPresses()
-        for i in range(charsCount):
-            char = self._serialDriver.read(1)
-            print(char)
-            self.setCursorPos(7, 0)
-            self.writeText(str(charsCount-i-1))
-            self.setCursorPos(i+1, 3)
-            self.sendBytes(char)
 
+class Demo:
+    class ThreadSerialListener(serial.threaded.Protocol):
+        _panel = None
+        def connection_made(self, transport):
+            print("port connected")
+        def data_received(self, data):
+            for currentByte in bytearray(data):
+                if currentByte == MatrixOrbital.Constants.UP_KEY:
+                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness + 20))
+                elif currentByte == MatrixOrbital.Constants.DOWN_KEY:
+                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness - 20))
+                elif currentByte == MatrixOrbital.Constants.LEFT_KEY:
+                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast - 5))
+                elif currentByte == MatrixOrbital.Constants.RIGHT_KEY:
+                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast + 5))
+        def connection_lost(self, exc):
+            if exc:
+                print(str(exc))
+                traceback.print_exc(exc)
+            print('port closed\n')
+
+    def demoThreadedLedChanges(self):
+        while self._ledsDemoRunning:
+            for led in range(1,4):
+                self._panel.setLedOff(led)
+                time.sleep(0.3)
+                self._panel.setLedYellow(led)
+                time.sleep(0.3)
+                self._panel.setLedRed(led)
+                time.sleep(0.3)
+                self._panel.setLedGreen(led)
+                time.sleep(0.3)
+        current_thread().join()
+
+    def __init__(self, panel):
+        self._panel = panel
+        self.ThreadSerialListener._panel = self._panel
+        self._listener = serial.threaded.ReaderThread(panel._serialDriver, self.ThreadSerialListener)
+        self._ledsDemoRunning = False
+
+    def enableKeyboardControllingContrastAndBrightness(self):
+        self._listener.start()
+
+    def disableKeyboardControllingContrastAndBrightness(self):
+        self._listener.stop()
+
+    def startLedsDemoThread(self):
+        self._ledsDemoRunning = True
+        self._threadLedsDemo = Thread(target=self.demoThreadedLedChanges)
+        self._threadLedsDemo.start()
+
+    def stopLedsDemoThread(self):
+        self._ledsDemoRunning = False
+
+    def runDemoPressedKeys(self, charsCount):
+        self._panel.writeText("Press {} keys to finish".format(charsCount))
+        self._panel.setSendAllKeyPresses()
+        for i in range(charsCount):
+            char = self._panel._serialDriver.read(1)
+            print(char)
+            self._panel.setCursorPos(7, 0)
+            self._panel.writeText(str(charsCount-i-1))
+            self._panel.setCursorPos(i+1, 3)
+            self._panel.sendBytes(char)
 
 def main(port):
     myPanel = MatrixOrbital(port=port)
-
+    demo = Demo(myPanel)
 
     # dump bitmap 1 to a file
     myPanel.dumpFileFromFilesystem(0, 1, "bitmap1_output.data")
 
-    # listen to the keyboard for contrast and brightness controls
-    myPanel.startKeyboardControlThread()
+
+    # enable controlling brightness and contrast by the keyboard
+    demo.enableKeyboardControllingContrastAndBrightness()
+
     myPanel.setDisplayOn()
     myPanel.clearScreen()
     
     # simple text
     myPanel.writeText("hello world!")
     time.sleep(1)
-    myPanel.startLedsDemoThread()
+
+
+    demo.startLedsDemoThread()
     
     myPanel.clearScreen()
     myPanel.drawSpiral(200, [int(myPanel.Constants.PANEL_WIDTH/2), int(myPanel.Constants.PANEL_HEIGHT/2)], myPanel.Constants.PANEL_HEIGHT)
     sign = 1
-    for offsetX in [25,50]:
+    for offsetX in [15,-40,60,-70]:
         myPanel.drawSpiral(200, [int(myPanel.Constants.PANEL_WIDTH/2) + offsetX, int(myPanel.Constants.PANEL_HEIGHT/2)], myPanel.Constants.PANEL_HEIGHT, incAngle = sign * pi/180)
-        sign = sign * -1
-        myPanel.drawSpiral(200, [int(myPanel.Constants.PANEL_WIDTH/2) - offsetX, int(myPanel.Constants.PANEL_HEIGHT/2)], myPanel.Constants.PANEL_HEIGHT, incAngle = sign * pi/180)
         sign = sign * -1
     #leds
     #for i in range(0,4):
 
 
+    demo.stopLedsDemoThread()
     #stop keyboard thread and start keyboard demo
-    myPanel.stopKeyboardControlThread()
-    myPanel.stopLedsDemoThread()
+    demo.disableKeyboardControllingContrastAndBrightness()
     myPanel.clearScreen()
-    myPanel.dumpInput(8)
+    demo.runDemoPressedKeys(8)
 
 if __name__ == "__main__":
     port = argv[1] if len(argv) == 2 else "/dev/ttyUSB0"
