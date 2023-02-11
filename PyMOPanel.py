@@ -206,13 +206,13 @@ class Demo:
         while self._ledsDemoRunning:
             for led in range(1,4):
                 self._panel.setLedOff(led)
-                time.sleep(0.3)
+                time.sleep(0.2)
                 self._panel.setLedYellow(led)
-                time.sleep(0.3)
+                time.sleep(0.1)
                 self._panel.setLedRed(led)
-                time.sleep(0.3)
+                time.sleep(0.1)
                 self._panel.setLedGreen(led)
-                time.sleep(0.3)
+                time.sleep(0.1)
 
     def __init__(self, panel):
         self._panel = panel
@@ -280,17 +280,17 @@ def main(port):
     myPanel.writeText('hello world!\n')
     time.sleep(2)
     myPanel.clearScreen()
-    myPanel.drawBMP('gif/resized_scissors.gif', x0=40)
-
     # start blinking leds on the background
+    demo.startLedsDemoThread()
+    time.sleep(1)
+    # stop leds blinking before the animation
+    demo.stopLedsDemoThread()
+    myPanel.drawBMP('gif/resized_scissors.gif', x0=40)
     demo.startLedsDemoThread()
 
     # draw some spirals
     demo.runDemoSpirals()
     
-    # stop leds blinking
-    demo.stopLedsDemoThread()
-
     # stop keyboard thread 
     demo.disableKeyboardControllingContrastAndBrightness()
 
@@ -298,15 +298,17 @@ def main(port):
     demo.runDemoPressedKeys(8)
 
     # show a BMP and exit
+    demo.stopLedsDemoThread()
     myPanel.clearScreen()
+    time.sleep(1)
+    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
+    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
+
     demo.startLedsDemoThread()
-    myPanel.drawBMP('gif/resized_line.gif', x0=50)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50)
-    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
-    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
     myPanel.drawBMP('bmp/goodbye.bmp')
     time.sleep(2)
-
     demo.stopLedsDemoThread()
     myPanel.setDisplayOff()
 
