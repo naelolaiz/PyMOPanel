@@ -61,10 +61,11 @@ class MatrixOrbital:
         img = Image.open(inputFilename)
         width = img.width
         height = img.height
-        for frame in range(img.n_frames):
+        frames = img.n_frames if hasattr(img,"n_frames") else 1
+        for frame in range(frames):
             img.seek(frame)
             bitDepth = {'1':1, 'L':8, 'P':8, 'RGB':24, 'RGBA':32, 'CMYK':32, 'YCbCr':24, 'I':32, 'F':32}[img.mode]
-            threshold = 100
+            threshold = 64
 
             buffer = img.tobytes()
             if len(buffer) % bitDepth != 0:
@@ -78,18 +79,18 @@ class MatrixOrbital:
             outputArray += height.to_bytes(1,'little')
             # pack input 8 bit image to 1 bit monocromatic pixels
             for byteNr in range(int(len(buffer)/bitDepth)):
-                outputArray += ((128 if buffer[byteNr*bitDepth]>threshold else 0) +
-                                (64  if buffer[byteNr*bitDepth+1]>threshold else 0) +
-                                (32  if buffer[byteNr*bitDepth+2]>threshold else 0) +
-                                (16  if buffer[byteNr*bitDepth+3]>threshold else 0) +
-                                (8   if buffer[byteNr*bitDepth+4]>threshold else 0) +
-                                (4   if buffer[byteNr*bitDepth+5]>threshold else 0) +
-                                (2   if buffer[byteNr*bitDepth+6]>threshold else 0) +
-                                (1   if buffer[byteNr*bitDepth+7]>threshold else 0)).to_bytes(1,'little')
+                outputArray += ((128 if buffer[ byteNr*bitDepth ]<threshold else 0) +
+                                (64  if buffer[byteNr*bitDepth+1]<threshold else 0) +
+                                (32  if buffer[byteNr*bitDepth+2]<threshold else 0) +
+                                (16  if buffer[byteNr*bitDepth+3]<threshold else 0) +
+                                (8   if buffer[byteNr*bitDepth+4]<threshold else 0) +
+                                (4   if buffer[byteNr*bitDepth+5]<threshold else 0) +
+                                (2   if buffer[byteNr*bitDepth+6]<threshold else 0) +
+                                (1   if buffer[byteNr*bitDepth+7]<threshold else 0)).to_bytes(1,'little')
             # send data
             #print(str(outputArray))
             self.sendBytes(bytes(outputArray))
-            time.sleep(0.2) 
+            time.sleep(0.03) 
 
     def setGPOState(self, gpio, value):
         self.sendBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
@@ -236,12 +237,13 @@ class Demo:
         self._panel.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2), int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT)
         sign = 1
         for i in range(20):
-            offsetX = (random()*150)-75
+            offsetX = int((random()*150)-75)
+            offsetY = int((random()*30)-15)
             self._panel.drawSpiral(200, 
-                                   [int(MatrixOrbital.Constants.PANEL_WIDTH/2) + offsetX, int(MatrixOrbital.Constants.PANEL_HEIGHT/2)],
+                                   [int(MatrixOrbital.Constants.PANEL_WIDTH/2) + offsetX, int(MatrixOrbital.Constants.PANEL_HEIGHT/2)+offsetY],
                                    MatrixOrbital.Constants.PANEL_HEIGHT,
-                                   incAngle = sign * pi / (50 + random() * 100),
-                                   incRadius = 0.02 + random()/5)
+                                   incAngle = sign * pi / (10 + random() * 50),
+                                   incRadius = 0.02 + random()/4)
             sign = sign * -1
 
 
@@ -263,11 +265,7 @@ def main(port):
     
     # simple text
     myPanel.writeText('hello world!\n')
-    time.sleep(1)
-    myPanel.drawBMP('./animation.gif')
-    myPanel.drawBMP('./animation.gif')
-    myPanel.drawBMP('./animation.gif')
-    time.sleep(1)
+    time.sleep(2)
 
     # start blinking leds on the background
     demo.startLedsDemoThread()
@@ -287,7 +285,10 @@ def main(port):
     # show a BMP and exit
     myPanel.clearScreen()
     demo.startLedsDemoThread()
-    myPanel.drawBMP('./goodbye.bmp')
+    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.drawBMP('bmp/goodbye.bmp')
 
     time.sleep(2)
 
