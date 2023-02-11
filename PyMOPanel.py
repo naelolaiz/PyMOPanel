@@ -19,6 +19,10 @@ class MatrixOrbital:
         TOP_LEFT_KEY    = 0x41
         BOTTOM_LEFT_KEY = 0x47
 
+    class Helpers:
+        def sanitizeUint8(value):
+            return max(0,value) & 0xFF
+
     class State:
         def __init__(self):
             self._serialSendLock = Lock()
@@ -31,13 +35,13 @@ class MatrixOrbital:
         def data_received(self, data):
             for currentByte in bytearray(data):
                 if currentByte == MatrixOrbital.Constants.UP_KEY:
-                    self._panel.setBrightness((self._panel._brightness + 20) & 0xFF)
+                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness + 20))
                 elif currentByte == MatrixOrbital.Constants.DOWN_KEY:
-                    self._panel.setBrightness(max((self._panel._brightness - 20),0))
+                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness - 20))
                 elif currentByte == MatrixOrbital.Constants.LEFT_KEY:
-                    self._panel.setContrast(max((self._panel._contrast - 5),0))
+                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast - 5))
                 elif currentByte == MatrixOrbital.Constants.RIGHT_KEY:
-                    self._panel.setContrast((self._panel._contrast + 5) & 0xFF)
+                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast + 5))
         def connection_lost(self, exc):
             if exc:
                 print(str(exc))
