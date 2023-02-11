@@ -12,8 +12,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
  - create proper module
  - create menu helper (a la curses) to allow adding items with custom callback functions
  - keyboard to OSC example
- - [x] ~.data to screen~
- - [x] ~.bmp to .data~
+ - [x] ~.bmp to screen~
  - filesystem
    - [x] ~dumpers~
    - "ls"
