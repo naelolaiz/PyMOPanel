@@ -46,6 +46,14 @@ class MatrixOrbital:
         open(outputFilename, "wb").write(self._serialDriver.read(fileSizeInBytes))
         print("done!")
 
+    def dumpCompleteFilesystem(self, outputFilename):
+        self._serialDriver.reset_input_buffer()
+        self.sendBytes([0xfe, 0x30])
+        filesystemSize = int.from_bytes(self._serialDriver.read(4), byteorder="little", signed=False)
+        print("Dumping panel filesystem to {}...".format(outputFilename))
+        open(outputFilename, "wb").write(self._serialDriver.read(filesystemSize))
+        print("done!")
+
     def setGPOState(self, gpio, value):
         self.sendBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
 
@@ -198,6 +206,9 @@ class Demo:
 def main(port):
     myPanel = MatrixOrbital(port=port)
     demo = Demo(myPanel)
+
+    # dump complete filesystem to a file
+    myPanel.dumpCompleteFilesystem("filesystem.data")
 
     # dump bitmap 1 to a file
     myPanel.dumpFileFromFilesystem(0, 1, "bitmap1_output.data")
