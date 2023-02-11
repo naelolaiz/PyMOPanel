@@ -281,8 +281,11 @@ def main(port):
     myPanel.clearScreen()
     demo.startLedsDemoThread()
     myPanel.drawBMP('./goodbye.bmp')
+
     time.sleep(2)
+
     demo.stopLedsDemoThread()
+    myPanel.setDisplayOff()
 
 if __name__ == '__main__':
     port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'
