@@ -61,9 +61,11 @@ class MatrixOrbital:
         img = Image.open(inputFilename)
         width = img.width
         height = img.height
-        frames = img.n_frames if hasattr(img,"n_frames") else 1
-        for frame in range(frames):
-            img.seek(frame)
+        isAnimation = hasattr(img,"n_frames")
+        frames = img.n_frames if isAnimation else 2
+        for frame in range(1,frames):
+            if isAnimation: 
+                img.seek(frame)
             bitDepth = {'1':1, 'L':8, 'P':8, 'RGB':24, 'RGBA':32, 'CMYK':32, 'YCbCr':24, 'I':32, 'F':32}[img.mode]
             threshold = 64
 
@@ -90,7 +92,6 @@ class MatrixOrbital:
             # send data
             #print(str(outputArray))
             self.sendBytes(bytes(outputArray))
-            time.sleep(0.03) 
 
     def setGPOState(self, gpio, value):
         self.sendBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
@@ -287,9 +288,9 @@ def main(port):
     demo.startLedsDemoThread()
     myPanel.drawBMP('gif/resized_line.gif', x0=50)
     myPanel.drawBMP('gif/resized_line.gif', x0=50)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
+    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
     myPanel.drawBMP('bmp/goodbye.bmp')
-
     time.sleep(2)
 
     demo.stopLedsDemoThread()
