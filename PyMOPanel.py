@@ -70,10 +70,10 @@ class MatrixOrbital:
 
         # init array with header
         outputArray = bytearray(b'\xfe\x64')
-        outputArray += x0.to_bytes(1,'big')
-        outputArray += y0.to_bytes(1,'big')
-        outputArray += width.to_bytes(1,'big')
-        outputArray += height.to_bytes(1,'big')
+        outputArray += x0.to_bytes(1,'little')
+        outputArray += y0.to_bytes(1,'little')
+        outputArray += width.to_bytes(1,'little')
+        outputArray += height.to_bytes(1,'little')
         # pack input 8 bit image to 1 bit monocromatic pixels
         for byteNr in range(len(buffer_8_bit)>>3):
             outputArray += ((128 if buffer_8_bit[byteNr*8]>64 else 0) +
