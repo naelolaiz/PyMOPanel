@@ -26,6 +26,7 @@ class MatrixOrbital:
     def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
         self._port = port
         self._baudrate = baudrate
+        self._serialSendLock = Lock()
         self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
         self.setBrightness(200)
         self.setContrast(128)
@@ -153,7 +154,6 @@ class Demo:
                 time.sleep(0.3)
                 self._panel.setLedGreen(led)
                 time.sleep(0.3)
-        current_thread().join()
 
     def __init__(self, panel):
         self._panel = panel
@@ -176,6 +176,7 @@ class Demo:
         self._ledsDemoRunning = False
 
     def runDemoPressedKeys(self, charsCount):
+        self._panel.clearScreen()
         self._panel.writeText("Press {} keys to finish".format(charsCount))
         self._panel.setSendAllKeyPresses()
         for i in range(charsCount):
@@ -185,6 +186,14 @@ class Demo:
             self._panel.writeText(str(charsCount-i-1))
             self._panel.setCursorPos(i+1, 3)
             self._panel.sendBytes(char)
+    def runDemoSpirals(self):
+        self._panel.clearScreen()
+        self._panel.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2), int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT)
+        sign = 1
+        for offsetX in [15,-40,60,-70]:
+            self._panel.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2) + offsetX, int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT, incAngle = sign * pi/180)
+            sign = sign * -1
+
 
 def main(port):
     myPanel = MatrixOrbital(port=port)
@@ -192,7 +201,6 @@ def main(port):
 
     # dump bitmap 1 to a file
     myPanel.dumpFileFromFilesystem(0, 1, "bitmap1_output.data")
-
 
     # enable controlling brightness and contrast by the keyboard
     demo.enableKeyboardControllingContrastAndBrightness()
@@ -204,24 +212,26 @@ def main(port):
     myPanel.writeText("hello world!")
     time.sleep(1)
 
-
+    # start blinking leds on the background
     demo.startLedsDemoThread()
+
+    # draw some spirals
+    demo.runDemoSpirals()
     
-    myPanel.clearScreen()
-    myPanel.drawSpiral(200, [int(myPanel.Constants.PANEL_WIDTH/2), int(myPanel.Constants.PANEL_HEIGHT/2)], myPanel.Constants.PANEL_HEIGHT)
-    sign = 1
-    for offsetX in [15,-40,60,-70]:
-        myPanel.drawSpiral(200, [int(myPanel.Constants.PANEL_WIDTH/2) + offsetX, int(myPanel.Constants.PANEL_HEIGHT/2)], myPanel.Constants.PANEL_HEIGHT, incAngle = sign * pi/180)
-        sign = sign * -1
-    #leds
-    #for i in range(0,4):
-
-
+    # stop leds blinking
     demo.stopLedsDemoThread()
-    #stop keyboard thread and start keyboard demo
+
+    # stop keyboard thread 
     demo.disableKeyboardControllingContrastAndBrightness()
-    myPanel.clearScreen()
+
+    # start keyboard demo
     demo.runDemoPressedKeys(8)
+
+    myPanel.clearScreen()
+    myPanel.writeText("good bye!")
+    demo.startLedsDemoThread()
+    time.sleep(2)
+    demo.stopLedsDemoThread()
 
 if __name__ == "__main__":
     port = argv[1] if len(argv) == 2 else "/dev/ttyUSB0"
