@@ -61,32 +61,35 @@ class MatrixOrbital:
         img = Image.open(inputFilename)
         width = img.width
         height = img.height
-        if img.mode != 'L' and img.mode != 'P':
-            raise Exception('only 8 bit images are currently accepted')
+        for frame in range(img.n_frames):
+            img.seek(frame)
+            bitDepth = {'1':1, 'L':8, 'P':8, 'RGB':24, 'RGBA':32, 'CMYK':32, 'YCbCr':24, 'I':32, 'F':32}[img.mode]
+            threshold = 100
 
-        buffer_8_bit = img.tobytes()
-        if len(buffer_8_bit) % 8 != 0:
-            raise Exception('bitmap size should be a multiple of the used depth')
+            buffer = img.tobytes()
+            if len(buffer) % bitDepth != 0:
+                raise Exception('bitmap size should be a multiple of the used depth')
 
-        # init array with header
-        outputArray = bytearray(b'\xfe\x64')
-        outputArray += x0.to_bytes(1,'little')
-        outputArray += y0.to_bytes(1,'little')
-        outputArray += width.to_bytes(1,'little')
-        outputArray += height.to_bytes(1,'little')
-        # pack input 8 bit image to 1 bit monocromatic pixels
-        for byteNr in range(len(buffer_8_bit)>>3):
-            outputArray += ((128 if buffer_8_bit[byteNr*8]>64 else 0) +
-                            (64  if buffer_8_bit[byteNr*8+1]>64 else 0) +
-                            (32  if buffer_8_bit[byteNr*8+2]>64 else 0) +
-                            (16  if buffer_8_bit[byteNr*8+3]>64 else 0) +
-                            (8   if buffer_8_bit[byteNr*8+4]>64 else 0) +
-                            (4   if buffer_8_bit[byteNr*8+5]>64 else 0) +
-                            (2   if buffer_8_bit[byteNr*8+6]>64 else 0) +
-                            (1   if buffer_8_bit[byteNr*8+7]>64 else 0)).to_bytes(1,'little')
-        # send data
-        #print(str(outputArray))
-        self.sendBytes(bytes(outputArray))
+            # init array with header
+            outputArray = bytearray(b'\xfe\x64')
+            outputArray += x0.to_bytes(1,'little')
+            outputArray += y0.to_bytes(1,'little')
+            outputArray += width.to_bytes(1,'little')
+            outputArray += height.to_bytes(1,'little')
+            # pack input 8 bit image to 1 bit monocromatic pixels
+            for byteNr in range(int(len(buffer)/bitDepth)):
+                outputArray += ((128 if buffer[byteNr*bitDepth]>threshold else 0) +
+                                (64  if buffer[byteNr*bitDepth+1]>threshold else 0) +
+                                (32  if buffer[byteNr*bitDepth+2]>threshold else 0) +
+                                (16  if buffer[byteNr*bitDepth+3]>threshold else 0) +
+                                (8   if buffer[byteNr*bitDepth+4]>threshold else 0) +
+                                (4   if buffer[byteNr*bitDepth+5]>threshold else 0) +
+                                (2   if buffer[byteNr*bitDepth+6]>threshold else 0) +
+                                (1   if buffer[byteNr*bitDepth+7]>threshold else 0)).to_bytes(1,'little')
+            # send data
+            #print(str(outputArray))
+            self.sendBytes(bytes(outputArray))
+            time.sleep(0.2) 
 
     def setGPOState(self, gpio, value):
         self.sendBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
@@ -260,6 +263,10 @@ def main(port):
     
     # simple text
     myPanel.writeText('hello world!\n')
+    time.sleep(1)
+    myPanel.drawBMP('./animation.gif')
+    myPanel.drawBMP('./animation.gif')
+    myPanel.drawBMP('./animation.gif')
     time.sleep(1)
 
     # start blinking leds on the background
