@@ -189,7 +189,7 @@ class MatrixOrbital:
 
     # text methods
     def printText(self, text) :
-        self.writeBytes(bytes(text, 'UTF-8'))
+        self.writeBytes(bytes(text, 'UTF-8') if type(text) == str else text)
     def printLocatedText(self, x, y, text, font_ref_id=None) :
         if font_ref_id : self.selectCurrentFont(font_ref_id)
         self.setCursorMoveToPos(x,y)
