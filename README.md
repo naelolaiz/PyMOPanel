@@ -16,7 +16,9 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
  - keyboard to OSC example
  - [x] ~.bmp to screen~
  - [x] ~upload animated .gif to screen!~
+ - optimizations
    - use uploaded bitmaps instead for faster animations
+   - use numpy.array's to precalculate trigonometric in vectors  
  - filesystem
    - [x] ~dumpers~
    - "ls"
