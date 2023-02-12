@@ -12,7 +12,9 @@ from random import random,randint
 class MatrixOrbital:
     class Constants:
         PANEL_WIDTH  = 192
+        CENTER_X     = int(PANEL_WIDTH/2)
         PANEL_HEIGHT = 64
+        CENTER_Y     = int(PANEL_HEIGHT/2)
         MAX_NUMBER_OF_BARS = 16
         UP_KEY          = 0x42
         DOWN_KEY        = 0x48
@@ -196,18 +198,6 @@ class MatrixOrbital:
         self._contrast = contrast
         self.sendBytes([0xfe, 0x50, contrast])
 
-    def drawSpiral(self, color, centerPos, maxRadius, incRadius = 0.03, incAngle = pi/100, startingAngle =0):
-        self.setDrawingColor(color)
-        angle = startingAngle
-        radius = 0
-        while radius < maxRadius:
-            x = int(centerPos[0] + cos(angle) * radius)
-            y = int(centerPos[1] + sin(angle) * radius)
-            if x<0 or x>self.Constants.PANEL_WIDTH or y <0 or y > self.Constants.PANEL_HEIGHT:
-                break
-            self.drawPixel(x,y)
-            radius += incRadius
-            angle +=incAngle
 
 
 class Demo:
@@ -255,6 +245,19 @@ class Demo:
     def disableKeyboardControllingContrastAndBrightness(self):
         self._listener.stop()
 
+    def drawSpiral(self, color, centerPos, maxRadius, incRadius = 0.03, incAngle = pi/100, startingAngle =0):
+        self._panel.setDrawingColor(color)
+        angle = startingAngle
+        radius = 0
+        while radius < maxRadius:
+            x = int(centerPos[0] + cos(angle) * radius)
+            y = int(centerPos[1] + sin(angle) * radius)
+            if x<0 or x>MatrixOrbital.Constants.PANEL_WIDTH or y <0 or y > MatrixOrbital.Constants.PANEL_HEIGHT:
+                break
+            self._panel.drawPixel(x,y)
+            radius += incRadius
+            angle +=incAngle
+
     def startLedsDemoThread(self):
         self._ledsDemoRunning = True
         self._threadLedsDemo = Thread(target=self.demoThreadedLedChanges)
@@ -277,12 +280,12 @@ class Demo:
 
     def runDemoSpirals(self):
         self._panel.clearScreen()
-        self._panel.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2), int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT)
+        self.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2), int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT)
         sign = 1
         for i in range(22):
             offsetX = randint(-75,75)
             offsetY = randint(-20,20)
-            self._panel.drawSpiral(200, 
+            self.drawSpiral(200, 
                                    [int(MatrixOrbital.Constants.PANEL_WIDTH/2) + offsetX, int(MatrixOrbital.Constants.PANEL_HEIGHT/2)+offsetY],
                                    randint(10,MatrixOrbital.Constants.PANEL_HEIGHT),
                                    incAngle = sign * pi / randint(10,60),
@@ -305,6 +308,24 @@ class Demo:
             self._panel.setBarGraphValue(bar, random()*scaler)
             time.sleep(0.03)
 
+    def runDemoLissajous(self, cycles):
+        self._panel.clearScreen()
+        for i in range(cycles):
+            self._panel.clearScreen()
+            time.sleep(0.2)
+            phaseX=0
+            phaseY=0
+            incPhaseX = random()*pi/60
+            incPhaseY = random()*pi/60
+            for frame in range(700):
+                x = MatrixOrbital.Helpers.sanitizeUint8(MatrixOrbital.Constants.CENTER_X + int(MatrixOrbital.Constants.CENTER_X * cos(phaseX)))
+                y = MatrixOrbital.Helpers.sanitizeUint8(MatrixOrbital.Constants.CENTER_Y + int(MatrixOrbital.Constants.CENTER_Y * sin(phaseY)))
+                self._panel.drawPixel(x,y)
+                phaseX += incPhaseX
+                phaseY += incPhaseY
+                time.sleep(0.003)
+
+
 def main(port):
     myPanel = MatrixOrbital(port=port)
     demo = Demo(myPanel)
@@ -320,7 +341,7 @@ def main(port):
 
     myPanel.setDisplayOn()
     myPanel.clearScreen()
-    
+
     # simple text
     myPanel.writeText('hello world!\n')
     time.sleep(2)
@@ -338,6 +359,13 @@ def main(port):
 
     # bar graphs
     demo.runDemoBarGraphs()
+
+    time.sleep(1)
+
+    # draw 10 Lissajous curves
+    demo.runDemoLissajous(10)
+
+    time.sleep(1)
 
     # draw some spirals
     demo.runDemoSpirals()
