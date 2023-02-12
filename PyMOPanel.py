@@ -23,9 +23,9 @@ class MatrixOrbital:
 # class for handling threaded serial input
     class ThreadSerialListener(serial.threaded.Protocol):
         _panel = None
-        def connection_made(self, transport):
-            print('port connected')
-        def data_received(self, data):
+        _customCallbackForDataReceived = None
+
+        def brightnessAndContrastControlCallback(self, data):
             for currentByte in bytearray(data):
                 if currentByte == MatrixOrbital.Constants.UP_KEY:
                     self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness + 20))
@@ -35,10 +35,21 @@ class MatrixOrbital:
                     self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast - 5))
                 elif currentByte == MatrixOrbital.Constants.RIGHT_KEY:
                     self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast + 5))
+
+        def connection_made(self, transport):
+            print('port connected')
+
+        def data_received(self, data):
+            if not self._customCallbackForDataReceived:
+                print("Data received but no callback defined")
+                return
+            self._customCallbackForDataReceived(data)
+
         def connection_lost(self, exc):
             if exc:
                 traceback.print_exc(exc)
             print('port closed\n')
+
 # misc helpers
     class Helpers:
         def sanitizeUint8(value):
@@ -69,6 +80,7 @@ class MatrixOrbital:
         self._baudrate = baudrate
         self._serialSendLock = Lock()
         self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
+        self.ThreadSerialListener._customCallbackForDataReceived = self.ThreadSerialListener.brightnessAndContrastControlCallback
         self.ThreadSerialListener._panel = self
         self._serialListener = serial.threaded.ReaderThread(self._serialDriver, self.ThreadSerialListener)
         self._barGraphs = []
