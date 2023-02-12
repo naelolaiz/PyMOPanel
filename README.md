@@ -8,7 +8,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
 ![Example](doc/output_lcd.gif "example")
 
 ### TODO
- - separate Driver from Controller logic (the threads for keyboard and leds should be outside from the driver)
+ - separate Driver from Controller and Demo logic
    - [x] ~classes~
    - files
  - create proper module
