@@ -20,7 +20,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
  - allow FM and AM in Lissajous demo
  - optimizations
    - use uploaded bitmaps instead for faster animations
-   - use numpy.array's to precalculate trigonometric in vectors  
+   - use numpy.array's to precalculate trigonometric functions in vectors  
  - filesystem
    - [x] ~dumpers~
    - "ls"
