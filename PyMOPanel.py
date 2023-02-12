@@ -96,13 +96,18 @@ class MatrixOrbital:
         self._barGraphs[index].setValue(value)
         self.sendBytes([0xfe, 0x69, index, self._barGraphs[index].getValueInPixels()])
 
-    def drawBMP(self, inputFilename, x0=0, y0=0, thresholdForBW=50):
+    def drawBMP(self, inputFilename, x0=0, y0=0, thresholdForBW=50, inverted = False):
         time.sleep(0.2) # otherwise transfer may fail
         img = Image.open(inputFilename)
         width = img.width
         height = img.height
         isAnimation = hasattr(img,"n_frames")
         frames = img.n_frames if isAnimation else 2
+        def getValueForAboveThreshold(bit, inverted):
+            return 1<<(7-bit) if inverted else 0
+        def getValueForBelowThreshold(bit, inverted):
+            return getValueForAboveThreshold(bit, not inverted)
+
         for frame in range(1,frames):
             if isAnimation: 
                 img.seek(frame)
@@ -123,7 +128,7 @@ class MatrixOrbital:
             # pack input 8 bit image to 1 bit monocromatic pixels
             for pixelNr in range(0, width*height, 8):
                 baseAddrForByte = pixelNr
-                outputArray += sum([1<<(7-bit) if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+bit, bytesPerPixel)>=thresholdForBW else 0 for bit in range(8)]).to_bytes(1,'little')
+                outputArray += sum([getValueForAboveThreshold(bit,inverted) if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+bit, bytesPerPixel)>=thresholdForBW else getValueForBelowThreshold(bit,inverted) for bit in range(8)]).to_bytes(1,'little')
 
             # send data
             #print(str(outputArray))
@@ -348,9 +353,9 @@ def main(port):
     myPanel.clearScreen()
     time.sleep(1)
     myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
-    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
+    myPanel.drawBMP('gif/resized_corridor.gif', x0=40, inverted=True)
     time.sleep(0.2)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.drawBMP('gif/resized_line.gif', x0=50, thresholdForBW=128)
     myPanel.drawBMP('gif/resized_line.gif', x0=50)
     time.sleep(0.5)
 
