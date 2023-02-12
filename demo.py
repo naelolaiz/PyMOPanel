@@ -93,7 +93,7 @@ class Demo:
             phaseY=0
             incPhaseX = random()*pi/60
             incPhaseY = random()*pi/60
-            for frame in range(700):
+            for frame in range(1500):
                 x = MatrixOrbital.Constants.CENTER_X + int(MatrixOrbital.Constants.CENTER_X * cos(phaseX))
                 y = MatrixOrbital.Constants.CENTER_Y + int(MatrixOrbital.Constants.CENTER_Y * sin(phaseY))
                 self._panel.drawPixel(x,y)

@@ -147,7 +147,6 @@ class MatrixOrbital:
     def setCursorPos(self, col, row):
         self.writeBytes([0xfe, 0x47,col,row])
 
-
     # LEDs control
     def setGPOState(self, gpio, value):
         self.writeBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
