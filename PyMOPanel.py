@@ -2,28 +2,57 @@
 import serial
 import serial.threaded
 import time
-from math import pi, sin, cos 
-from threading import Thread, Lock, current_thread
-from sys import argv,stdout
+from threading import Lock 
 import traceback
 from PIL import Image
-from random import random,randint
 
 class MatrixOrbital:
+# panel constants
     class Constants:
-        PANEL_WIDTH  = 192
-        CENTER_X     = int(PANEL_WIDTH/2)
-        PANEL_HEIGHT = 64
-        CENTER_Y     = int(PANEL_HEIGHT/2)
+        PANEL_WIDTH        = 192
+        CENTER_X           = int(PANEL_WIDTH/2)
+        PANEL_HEIGHT       = 64
+        CENTER_Y           = int(PANEL_HEIGHT/2)
         MAX_NUMBER_OF_BARS = 16
-        UP_KEY          = 0x42
-        DOWN_KEY        = 0x48
-        LEFT_KEY        = 0x44
-        RIGHT_KEY       = 0x43
-        CENTER_KEY      = 0x45
-        TOP_LEFT_KEY    = 0x41
-        BOTTOM_LEFT_KEY = 0x47
+        UP_KEY             = 0x42
+        DOWN_KEY           = 0x48
+        LEFT_KEY           = 0x44
+        RIGHT_KEY          = 0x43
+        CENTER_KEY         = 0x45
+        TOP_LEFT_KEY       = 0x41
+        BOTTOM_LEFT_KEY    = 0x47
 
+# class for handling threaded serial input. Note that (static) attributes need to be set. _panel is mandatory, _customCallbackForDataReceived is optional. brightnessAndContrastControlCallback is provided as an example of default behavior. Thread can be started and stopped
+    class ThreadSerialListener(serial.threaded.Protocol):
+        _panel = None
+        _customCallbackForDataReceived = None
+
+        def brightnessAndContrastControlCallback(self, data):
+            for currentByte in bytearray(data):
+                if currentByte == MatrixOrbital.Constants.UP_KEY:
+                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness + 20))
+                elif currentByte == MatrixOrbital.Constants.DOWN_KEY:
+                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness - 20))
+                elif currentByte == MatrixOrbital.Constants.LEFT_KEY:
+                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast - 5))
+                elif currentByte == MatrixOrbital.Constants.RIGHT_KEY:
+                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast + 5))
+
+        def connection_made(self, transport):
+            print('port connected')
+
+        def data_received(self, data):
+            if not self._customCallbackForDataReceived:
+                print("Data received but no callback defined")
+                return
+            self._customCallbackForDataReceived(data)
+
+        def connection_lost(self, exc):
+            if exc:
+                traceback.print_exc(exc)
+            print('port closed\n')
+
+# misc helpers
     class Helpers:
         def sanitizeUint8(value):
             return max(0,value) & 0xFF
@@ -52,32 +81,46 @@ class MatrixOrbital:
         self._port = port
         self._baudrate = baudrate
         self._serialSendLock = Lock()
+        self._serialReceiveLock = Lock()
         self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
         self._barGraphs = []
         self.setBrightness(200)
         self.setContrast(128)
 
+    def enableKeyboardControllingContrastAndBrightness(self):
+        self.ThreadSerialListener._customCallbackForDataReceived = self.ThreadSerialListener.brightnessAndContrastControlCallback
+        self.ThreadSerialListener._panel = self
+        self._serialListener = serial.threaded.ReaderThread(self._serialDriver, self.ThreadSerialListener)
+        self._serialListener.start()
+
+    def disableKeyboardControllingContrastAndBrightness(self):
+        self.ThreadSerialListener._customCallbackForDataReceived = None
+        self._serialListener.stop()
+
     def sendBytes(self, buffer):
         with self._serialSendLock:
             self._serialDriver.write(buffer)
 
+    def read(self, requestedBytesCount):
+        return self._serialDriver.read(requestedBytesCount)
+
     def dumpFileFromFilesystem(self, fontNoBitmap, fileId, outputFilename):
         self._serialDriver.reset_input_buffer()
         self.sendBytes([0xfe,0xb2, 0 if fontNoBitmap else 1, fileId])
-        fileSizeInBytes = int.from_bytes(self._serialDriver.read(4), byteorder='little', signed=False) - 2
-        width  = int.from_bytes(self._serialDriver.read(1), byteorder='little', signed=False)
-        height = int.from_bytes(self._serialDriver.read(1), byteorder='little', signed=False)
+        fileSizeInBytes = int.from_bytes(self.read(4), byteorder='little', signed=False) - 2
+        width  = int.from_bytes(self.read(1), byteorder='little', signed=False)
+        height = int.from_bytes(self.read(1), byteorder='little', signed=False)
         print('Downloading {} {} from panel filesystem to {}...'.format('font' if fontNoBitmap else 'bitmap', fileId, outputFilename))
         open(outputFilename+'.info', 'w').writelines(['width: {}\n'.format(width), 'height: {}\n'.format(height)])
-        open(outputFilename, 'wb').write(self._serialDriver.read(fileSizeInBytes))
+        open(outputFilename, 'wb').write(self.read(fileSizeInBytes))
         print('done!')
 
     def dumpCompleteFilesystem(self, outputFilename):
         self._serialDriver.reset_input_buffer()
         self.sendBytes([0xfe, 0x30])
-        filesystemSize = int.from_bytes(self._serialDriver.read(4), byteorder='little', signed=False)
+        filesystemSize = int.from_bytes(self.read(4), byteorder='little', signed=False)
         print('Dumping panel filesystem to {}...'.format(outputFilename))
-        open(outputFilename, 'wb').write(self._serialDriver.read(filesystemSize))
+        open(outputFilename, 'wb').write(self.read(filesystemSize))
         print('done!')
 
     
@@ -173,7 +216,7 @@ class MatrixOrbital:
         self.sendBytes([0xfe, 0x63, color, 0x10])
 
     def drawPixel(self, x, y):
-        self.sendBytes([0xfe, 0x70, x, y, 0x10])
+        self.sendBytes([0xfe, 0x70, MatrixOrbital.Helpers.sanitizeUint8(x), MatrixOrbital.Helpers.sanitizeUint8(y), 0x10])
 
     def drawSolidRectangle(self, color, x0, y0, x1, y1):
         self.sendBytes([0xfe, 0x78, color, x0, y0, x1, y1])
@@ -197,206 +240,4 @@ class MatrixOrbital:
     def setContrast(self, contrast):
         self._contrast = contrast
         self.sendBytes([0xfe, 0x50, contrast])
-
-
-
-class Demo:
-    class ThreadSerialListener(serial.threaded.Protocol):
-        _panel = None
-        def connection_made(self, transport):
-            print('port connected')
-        def data_received(self, data):
-            for currentByte in bytearray(data):
-                if currentByte == MatrixOrbital.Constants.UP_KEY:
-                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness + 20))
-                elif currentByte == MatrixOrbital.Constants.DOWN_KEY:
-                    self._panel.setBrightness(MatrixOrbital.Helpers.sanitizeUint8(self._panel._brightness - 20))
-                elif currentByte == MatrixOrbital.Constants.LEFT_KEY:
-                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast - 5))
-                elif currentByte == MatrixOrbital.Constants.RIGHT_KEY:
-                    self._panel.setContrast(MatrixOrbital.Helpers.sanitizeUint8(self._panel._contrast + 5))
-        def connection_lost(self, exc):
-            if exc:
-                print(str(exc))
-                traceback.print_exc(exc)
-            print('port closed\n')
-
-    def demoThreadedLedChanges(self):
-        while self._ledsDemoRunning:
-            for led in range(3):
-                self._panel.setLedOff(led)
-                time.sleep(0.2)
-                self._panel.setLedYellow(led)
-                time.sleep(0.1)
-                self._panel.setLedRed(led)
-                time.sleep(0.1)
-                self._panel.setLedGreen(led)
-                time.sleep(0.1)
-
-    def __init__(self, panel):
-        self._panel = panel
-        self.ThreadSerialListener._panel = self._panel
-        self._listener = serial.threaded.ReaderThread(panel._serialDriver, self.ThreadSerialListener)
-        self._ledsDemoRunning = False
-
-    def enableKeyboardControllingContrastAndBrightness(self):
-        self._listener.start()
-
-    def disableKeyboardControllingContrastAndBrightness(self):
-        self._listener.stop()
-
-    def drawSpiral(self, color, centerPos, maxRadius, incRadius = 0.03, incAngle = pi/100, startingAngle =0):
-        self._panel.setDrawingColor(color)
-        angle = startingAngle
-        radius = 0
-        while radius < maxRadius:
-            x = int(centerPos[0] + cos(angle) * radius)
-            y = int(centerPos[1] + sin(angle) * radius)
-            if x<0 or x>MatrixOrbital.Constants.PANEL_WIDTH or y <0 or y > MatrixOrbital.Constants.PANEL_HEIGHT:
-                break
-            self._panel.drawPixel(x,y)
-            radius += incRadius
-            angle +=incAngle
-
-    def startLedsDemoThread(self):
-        self._ledsDemoRunning = True
-        self._threadLedsDemo = Thread(target=self.demoThreadedLedChanges)
-        self._threadLedsDemo.start()
-
-    def stopLedsDemoThread(self):
-        self._ledsDemoRunning = False
-
-    def runDemoPressedKeys(self, charsCount):
-        self._panel.clearScreen()
-        self._panel.writeText('Press {} keys to finish'.format(charsCount))
-        self._panel.setSendAllKeyPresses()
-        for i in range(charsCount):
-            char = self._panel._serialDriver.read(1)
-            print(char)
-            self._panel.setCursorPos(7, 0)
-            self._panel.writeText(str(charsCount-i-1))
-            self._panel.setCursorPos(i+1, 3)
-            self._panel.sendBytes(char)
-
-    def runDemoSpirals(self):
-        self._panel.clearScreen()
-        self.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2), int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT)
-        sign = 1
-        for i in range(22):
-            offsetX = randint(-75,75)
-            offsetY = randint(-20,20)
-            self.drawSpiral(200, 
-                                   [int(MatrixOrbital.Constants.PANEL_WIDTH/2) + offsetX, int(MatrixOrbital.Constants.PANEL_HEIGHT/2)+offsetY],
-                                   randint(10,MatrixOrbital.Constants.PANEL_HEIGHT),
-                                   incAngle = sign * pi / randint(10,60),
-                                   incRadius = 0.02 + 0.25 * random())
-            sign = sign * -1
-
-    def runDemoBarGraphs(self):
-        self._panel.clearScreen()
-        time.sleep(0.2)
-        numberOfBars = MatrixOrbital.Constants.MAX_NUMBER_OF_BARS
-        deltaX = int(MatrixOrbital.Constants.PANEL_WIDTH / numberOfBars)
-        for i in range(0, MatrixOrbital.Constants.PANEL_WIDTH, deltaX):
-            index = self._panel.addBarGraph(i,          0,
-                                            i+deltaX-1, MatrixOrbital.Constants.PANEL_HEIGHT,
-                                            "VerticalBottom")
-
-        scaler = 1/1.3
-        for i in range(400):
-            bar = randint(0,numberOfBars-1)
-            self._panel.setBarGraphValue(bar, random()*scaler)
-            time.sleep(0.03)
-
-    def runDemoLissajous(self, cycles):
-        self._panel.clearScreen()
-        for i in range(cycles):
-            self._panel.clearScreen()
-            time.sleep(0.2)
-            phaseX=0
-            phaseY=0
-            incPhaseX = random()*pi/60
-            incPhaseY = random()*pi/60
-            for frame in range(700):
-                x = MatrixOrbital.Helpers.sanitizeUint8(MatrixOrbital.Constants.CENTER_X + int(MatrixOrbital.Constants.CENTER_X * cos(phaseX)))
-                y = MatrixOrbital.Helpers.sanitizeUint8(MatrixOrbital.Constants.CENTER_Y + int(MatrixOrbital.Constants.CENTER_Y * sin(phaseY)))
-                self._panel.drawPixel(x,y)
-                phaseX += incPhaseX
-                phaseY += incPhaseY
-                time.sleep(0.003)
-
-
-def main(port):
-    myPanel = MatrixOrbital(port=port)
-    demo = Demo(myPanel)
-
-    # dump complete filesystem to a file
-    #myPanel.dumpCompleteFilesystem('filesystem.data')
-
-    # dump bitmap 1 to a file
-    #myPanel.dumpFileFromFilesystem(0, 1, 'bitmap1_output.data')
-
-    # enable controlling brightness and contrast by the keyboard
-    demo.enableKeyboardControllingContrastAndBrightness()
-
-    myPanel.setDisplayOn()
-    myPanel.clearScreen()
-
-    # simple text
-    myPanel.writeText('hello world!\n')
-    time.sleep(2)
-    myPanel.clearScreen()
-
-    # start blinking leds on the background
-    demo.startLedsDemoThread()
-    time.sleep(1)
-
-    # stop leds blinking before the animation
-    demo.stopLedsDemoThread()
-    myPanel.drawBMP('gif/resized_scissors.gif', x0=40)
-    demo.startLedsDemoThread()
-    time.sleep(1)
-
-    # bar graphs
-    demo.runDemoBarGraphs()
-
-    time.sleep(1)
-
-    # draw 10 Lissajous curves
-    demo.runDemoLissajous(10)
-
-    time.sleep(1)
-
-    # draw some spirals
-    demo.runDemoSpirals()
-    
-    # stop keyboard thread 
-    demo.disableKeyboardControllingContrastAndBrightness()
-
-    # start keyboard demo
-    demo.runDemoPressedKeys(8)
-
-    # show a BMP and exit
-    demo.stopLedsDemoThread()
-    myPanel.clearScreen()
-    time.sleep(1)
-    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
-    myPanel.drawBMP('gif/resized_corridor.gif', x0=40, inverted=True)
-    time.sleep(0.2)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50, thresholdForBW=128)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50)
-    time.sleep(0.5)
-
-    demo.startLedsDemoThread()
-    myPanel.drawBMP('bmp/goodbye.bmp')
-    time.sleep(2)
-    demo.stopLedsDemoThread()
-    myPanel.setDisplayOff()
-    time.sleep(1)
-    for i in range(3):
-        myPanel.setLedOff(i)
-
-if __name__ == '__main__':
-    port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'
-    main(port=port)
 
