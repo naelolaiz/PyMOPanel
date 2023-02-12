@@ -7,7 +7,7 @@ from threading import Thread, Lock, current_thread
 from sys import argv,stdout
 import traceback
 from PIL import Image
-from random import random
+from random import random,randint
 
 class MatrixOrbital:
     class Constants:
@@ -108,8 +108,6 @@ class MatrixOrbital:
                 img.seek(frame)
             bitDepth = {'1':1, 'L':8, 'P':8, 'RGB':24, 'RGBA':32, 'CMYK':32, 'YCbCr':24, 'I':32, 'F':32}[img.mode]
             bytesPerPixel = bitDepth / 8
-            print(bitDepth)
-            print(img.mode)
             threshold = 64
 
             buffer = img.tobytes()
@@ -142,8 +140,8 @@ class MatrixOrbital:
         self.sendBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
 
     def setLedState(self, led, state):
-        gpoMsb = 0 if led == 1 else 4 if led == 2 else 6
-        gpoLsb = 1 if led == 1 else 3 if led == 2 else 5
+        gpoMsb = 2 if led == 0 else 4 if led == 1 else 6
+        gpoLsb = 1 if led == 0 else 3 if led == 1 else 5
         self.setGPOState(gpoMsb, state[0])
         self.setGPOState(gpoLsb, state[1])
 
@@ -278,18 +276,19 @@ class Demo:
             self._panel.writeText(str(charsCount-i-1))
             self._panel.setCursorPos(i+1, 3)
             self._panel.sendBytes(char)
+
     def runDemoSpirals(self):
         self._panel.clearScreen()
         self._panel.drawSpiral(200, [int(MatrixOrbital.Constants.PANEL_WIDTH/2), int(MatrixOrbital.Constants.PANEL_HEIGHT/2)], MatrixOrbital.Constants.PANEL_HEIGHT)
         sign = 1
-        for i in range(20):
-            offsetX = int((random()*150)-75)
-            offsetY = int((random()*30)-15)
+        for i in range(22):
+            offsetX = randint(-75,75)
+            offsetY = randint(-20,20)
             self._panel.drawSpiral(200, 
                                    [int(MatrixOrbital.Constants.PANEL_WIDTH/2) + offsetX, int(MatrixOrbital.Constants.PANEL_HEIGHT/2)+offsetY],
-                                   MatrixOrbital.Constants.PANEL_HEIGHT,
-                                   incAngle = sign * pi / (10 + random() * 50),
-                                   incRadius = 0.02 + random()/4)
+                                   randint(10,MatrixOrbital.Constants.PANEL_HEIGHT),
+                                   incAngle = sign * pi / randint(10,60),
+                                   incRadius = 0.02 + 0.25 * random())
             sign = sign * -1
 
     def runDemoBarGraphs(self):
@@ -302,9 +301,10 @@ class Demo:
                                             i+deltaX-1, MatrixOrbital.Constants.PANEL_HEIGHT,
                                             "VerticalBottom")
 
-        for i in range(200):
-            bar = int(random()*numberOfBars)
-            self._panel.setBarGraphValue(bar, random())
+        scaler = 1/1.3
+        for i in range(400):
+            bar = randint(0,numberOfBars-1)
+            self._panel.setBarGraphValue(bar, random()*scaler)
             time.sleep(0.03)
 
 def main(port):
