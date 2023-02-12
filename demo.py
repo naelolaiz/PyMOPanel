@@ -47,15 +47,12 @@ class Demo:
 
     def runDemoPressedKeys(self, charsCount):
         self._panel.clearScreen()
-        self._panel.writeText('Press {} keys to finish'.format(charsCount))
-        self._panel.setSendAllKeyPresses()
+        self._panel.printText('Press {} keys to finish'.format(charsCount))
+        self._panel.setAutoTransmitKeyPressed(True)
         for i in range(charsCount):
-            char = self._panel.read(1)
-            print(char)
-            self._panel.setCursorPos(7, 0)
-            self._panel.writeText(str(charsCount-i-1))
-            self._panel.setCursorPos(i+1, 3)
-            self._panel.sendBytes(char)
+            char = self._panel.readBytes(1)
+            self._panel.printLocatedText(7, 0, str(charsCount-i-1))
+            self._panel.printLocatedText(i+1, 3, char)
 
     def runDemoSpirals(self):
         self._panel.clearScreen()
@@ -96,7 +93,7 @@ class Demo:
             phaseY=0
             incPhaseX = random()*pi/60
             incPhaseY = random()*pi/60
-            for frame in range(700):
+            for frame in range(1500):
                 x = MatrixOrbital.Constants.CENTER_X + int(MatrixOrbital.Constants.CENTER_X * cos(phaseX))
                 y = MatrixOrbital.Constants.CENTER_Y + int(MatrixOrbital.Constants.CENTER_Y * sin(phaseY))
                 self._panel.drawPixel(x,y)
@@ -118,11 +115,12 @@ def main(port):
     # enable controlling brightness and contrast by the keyboard
     myPanel.enableKeyboardControllingContrastAndBrightness()
 
-    myPanel.setDisplayOn()
+    # turn screen on
+    myPanel.setScreen(True)
     myPanel.clearScreen()
 
     # simple text
-    myPanel.writeText('hello world!\n')
+    myPanel.printText('hello world!\n')
     time.sleep(2)
     myPanel.clearScreen()
 
@@ -132,7 +130,7 @@ def main(port):
 
     # stop leds blinking before the animation
     demo.stopLedsDemoThread()
-    myPanel.drawBMP('gif/resized_scissors.gif', x0=40)
+    myPanel.uploadAndShowBitmap('gif/resized_scissors.gif', x0=40)
     demo.startLedsDemoThread()
     time.sleep(1)
 
@@ -159,18 +157,20 @@ def main(port):
     demo.stopLedsDemoThread()
     myPanel.clearScreen()
     time.sleep(1)
-    myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
-    myPanel.drawBMP('gif/resized_corridor.gif', x0=40, inverted=True)
+    myPanel.uploadAndShowBitmap('gif/resized_corridor.gif', x0=40)
+    myPanel.uploadAndShowBitmap('gif/resized_corridor.gif', x0=40, inverted=True)
     time.sleep(0.2)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50, thresholdForBW=128)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.uploadAndShowBitmap('gif/resized_line.gif', x0=50, thresholdForBW=128)
+    myPanel.uploadAndShowBitmap('gif/resized_line.gif', x0=50)
     time.sleep(0.5)
 
     demo.startLedsDemoThread()
-    myPanel.drawBMP('bmp/goodbye.bmp')
+    myPanel.uploadAndShowBitmap('bmp/goodbye.bmp')
     time.sleep(2)
     demo.stopLedsDemoThread()
-    myPanel.setDisplayOff()
+
+    # turn screen off
+    myPanel.setScreen(False)
     time.sleep(1)
     for i in range(3):
         myPanel.setLedOff(i)
