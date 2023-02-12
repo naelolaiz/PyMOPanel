@@ -27,4 +27,4 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
    - .data to filesystem
    - helpers
      - .data to .bmp?
-   - hack for Quake to use the panel as display?     
+   - hack for Quake to use the panel as display + input device?     
