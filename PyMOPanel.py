@@ -83,6 +83,8 @@ class MatrixOrbital:
         self._serialSendLock = Lock()
         self._serialReceiveLock = Lock()
         self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
+        if not self._serialDriver.is_open:
+            raise Exception("MatrixOrbital device not found")
         self._barGraphs = []
         self.setBrightness(200)
         self.setContrast(128)
