@@ -313,16 +313,34 @@ class Demo:
         for i in range(cycles):
             self._panel.clearScreen()
             time.sleep(0.2)
-            phaseX=0
-            phaseY=0
+            phaseX = 0
+            phaseY = 0
             incPhaseX = random()*pi/60
             incPhaseY = random()*pi/60
-            for frame in range(700):
-                x = MatrixOrbital.Helpers.sanitizeUint8(MatrixOrbital.Constants.CENTER_X + int(MatrixOrbital.Constants.CENTER_X * cos(phaseX)))
-                y = MatrixOrbital.Helpers.sanitizeUint8(MatrixOrbital.Constants.CENTER_Y + int(MatrixOrbital.Constants.CENTER_Y * sin(phaseY)))
+            amPhaseX = 0
+            amPhaseY = 0
+            incAmPhaseX = incPhaseX * random() / 10
+            def scaleAndTranslate(value, outputRange, inputRange = [-1., 1.]):
+                distanceInputRange = inputRange[1] - inputRange[0]
+                #centerInput = inputRange[0] + distanceInputRange/2
+                distanceOutputRange = outputRange[1] - outputRange[0]
+                #centerOutput = outputRange[0] + distanceOutputRange/2
+                return outputRange[0] + value * distanceOutputRange / distanceInputRange
+
+            amXRange = [0.3, 1.]
+            amYRange = [1.,  1.]
+            incAmPhaseY = incPhaseY * random() / 10
+            for frame in range(3000):
+                x = MatrixOrbital.Helpers.sanitizeUint8(MatrixOrbital.Constants.CENTER_X +
+                                                        int(MatrixOrbital.Constants.CENTER_X * cos(phaseX) * scaleAndTranslate(sin(amPhaseX), amXRange)))
+                y = MatrixOrbital.Helpers.sanitizeUint8(MatrixOrbital.Constants.CENTER_Y +
+                                                        int(MatrixOrbital.Constants.CENTER_Y * sin(phaseY) * scaleAndTranslate(cos(amPhaseY), amYRange)))
                 self._panel.drawPixel(x,y)
                 phaseX += incPhaseX
                 phaseY += incPhaseY
+                amPhaseX += incAmPhaseX
+                amPhaseY += incAmPhaseY
+
                 time.sleep(0.003)
 
 
@@ -352,18 +370,19 @@ def main(port):
     time.sleep(1)
 
     # stop leds blinking before the animation
-    demo.stopLedsDemoThread()
-    myPanel.drawBMP('gif/resized_scissors.gif', x0=40)
-    demo.startLedsDemoThread()
-    time.sleep(1)
+    #demo.stopLedsDemoThread()
+    #myPanel.drawBMP('gif/resized_scissors.gif', x0=40)
+    #demo.startLedsDemoThread()
+    #time.sleep(1)
 
     # bar graphs
-    demo.runDemoBarGraphs()
+    #demo.runDemoBarGraphs()
 
-    time.sleep(1)
+    #time.sleep(1)
 
     # draw 10 Lissajous curves
-    demo.runDemoLissajous(10)
+    while True:
+        demo.runDemoLissajous(10)
 
     time.sleep(1)
 
