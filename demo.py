@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-import serial.threaded
 import time
 from math import pi, sin, cos 
 from threading import Thread 
 from sys import argv
-import traceback
 from random import random,randint
 
 from PyMOPanel import MatrixOrbital
@@ -52,7 +50,7 @@ class Demo:
         self._panel.writeText('Press {} keys to finish'.format(charsCount))
         self._panel.setSendAllKeyPresses()
         for i in range(charsCount):
-            char = self._panel._serialDriver.read(1)
+            char = self._panel.read(1)
             print(char)
             self._panel.setCursorPos(7, 0)
             self._panel.writeText(str(charsCount-i-1))

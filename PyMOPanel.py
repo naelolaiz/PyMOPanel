@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import serial
+import serial.threaded
 import time
 from threading import Lock 
+import traceback
 from PIL import Image
 
 class MatrixOrbital:
@@ -20,7 +22,7 @@ class MatrixOrbital:
         TOP_LEFT_KEY       = 0x41
         BOTTOM_LEFT_KEY    = 0x47
 
-# class for handling threaded serial input
+# class for handling threaded serial input. Note that (static) attributes need to be set. _panel is mandatory, _customCallbackForDataReceived is optional. brightnessAndContrastControlCallback is provided as an example of default behavior. Thread can be started and stopped
     class ThreadSerialListener(serial.threaded.Protocol):
         _panel = None
         _customCallbackForDataReceived = None
@@ -79,41 +81,46 @@ class MatrixOrbital:
         self._port = port
         self._baudrate = baudrate
         self._serialSendLock = Lock()
+        self._serialReceiveLock = Lock()
         self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
-        self.ThreadSerialListener._customCallbackForDataReceived = self.ThreadSerialListener.brightnessAndContrastControlCallback
-        self.ThreadSerialListener._panel = self
-        self._serialListener = serial.threaded.ReaderThread(self._serialDriver, self.ThreadSerialListener)
         self._barGraphs = []
         self.setBrightness(200)
         self.setContrast(128)
 
     def enableKeyboardControllingContrastAndBrightness(self):
+        self.ThreadSerialListener._customCallbackForDataReceived = self.ThreadSerialListener.brightnessAndContrastControlCallback
+        self.ThreadSerialListener._panel = self
+        self._serialListener = serial.threaded.ReaderThread(self._serialDriver, self.ThreadSerialListener)
         self._serialListener.start()
 
     def disableKeyboardControllingContrastAndBrightness(self):
+        self.ThreadSerialListener._customCallbackForDataReceived = None
         self._serialListener.stop()
 
     def sendBytes(self, buffer):
         with self._serialSendLock:
             self._serialDriver.write(buffer)
 
+    def read(self, requestedBytesCount):
+        return self._serialDriver.read(requestedBytesCount)
+
     def dumpFileFromFilesystem(self, fontNoBitmap, fileId, outputFilename):
         self._serialDriver.reset_input_buffer()
         self.sendBytes([0xfe,0xb2, 0 if fontNoBitmap else 1, fileId])
-        fileSizeInBytes = int.from_bytes(self._serialDriver.read(4), byteorder='little', signed=False) - 2
-        width  = int.from_bytes(self._serialDriver.read(1), byteorder='little', signed=False)
-        height = int.from_bytes(self._serialDriver.read(1), byteorder='little', signed=False)
+        fileSizeInBytes = int.from_bytes(self.read(4), byteorder='little', signed=False) - 2
+        width  = int.from_bytes(self.read(1), byteorder='little', signed=False)
+        height = int.from_bytes(self.read(1), byteorder='little', signed=False)
         print('Downloading {} {} from panel filesystem to {}...'.format('font' if fontNoBitmap else 'bitmap', fileId, outputFilename))
         open(outputFilename+'.info', 'w').writelines(['width: {}\n'.format(width), 'height: {}\n'.format(height)])
-        open(outputFilename, 'wb').write(self._serialDriver.read(fileSizeInBytes))
+        open(outputFilename, 'wb').write(self.read(fileSizeInBytes))
         print('done!')
 
     def dumpCompleteFilesystem(self, outputFilename):
         self._serialDriver.reset_input_buffer()
         self.sendBytes([0xfe, 0x30])
-        filesystemSize = int.from_bytes(self._serialDriver.read(4), byteorder='little', signed=False)
+        filesystemSize = int.from_bytes(self.read(4), byteorder='little', signed=False)
         print('Dumping panel filesystem to {}...'.format(outputFilename))
-        open(outputFilename, 'wb').write(self._serialDriver.read(filesystemSize))
+        open(outputFilename, 'wb').write(self.read(filesystemSize))
         print('done!')
 
     
