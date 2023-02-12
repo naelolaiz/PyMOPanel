@@ -96,7 +96,7 @@ class MatrixOrbital:
         self._barGraphs[index].setValue(value)
         self.sendBytes([0xfe, 0x69, index, self._barGraphs[index].getValueInPixels()])
 
-    def drawBMP(self, inputFilename, x0=0, y0=0):
+    def drawBMP(self, inputFilename, x0=0, y0=0, thresholdForBW=50):
         time.sleep(0.2) # otherwise transfer may fail
         img = Image.open(inputFilename)
         width = img.width
@@ -108,7 +108,6 @@ class MatrixOrbital:
                 img.seek(frame)
             bitDepth = {'1':1, 'L':8, 'P':8, 'RGB':24, 'RGBA':32, 'CMYK':32, 'YCbCr':24, 'I':32, 'F':32}[img.mode]
             bytesPerPixel = bitDepth / 8
-            threshold = 64
 
             buffer = img.tobytes()
             if len(buffer) % bitDepth != 0:
@@ -120,18 +119,13 @@ class MatrixOrbital:
             outputArray += y0.to_bytes(1,'little')
             outputArray += width.to_bytes(1,'little')
             outputArray += height.to_bytes(1,'little')
+
             # pack input 8 bit image to 1 bit monocromatic pixels
             for pixelNr in range(0, width*height, 8):
                 baseAddrForByte = pixelNr
-                outputArray += ((128 if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr, bytesPerPixel)<threshold else 0) +
-                                (64  if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+1, bytesPerPixel)<threshold else 0) +
-                                (32  if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+2, bytesPerPixel)<threshold else 0) +
-                                (16  if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+3, bytesPerPixel)<threshold else 0) +
-                                (8   if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+4, bytesPerPixel)<threshold else 0) +
-                                (4   if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+5, bytesPerPixel)<threshold else 0) +
-                                (2   if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+6, bytesPerPixel)<threshold else 0) +
-                                (1   if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+7, bytesPerPixel)<threshold else 0)).to_bytes(1,'little')
-           
+                # TODO shift left
+                outputArray += sum([1<<(7-bit) if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+bit, bytesPerPixel)>=thresholdForBW else 0 for bit in range(8)]).to_bytes(1,'little')
+
             # send data
             #print(str(outputArray))
             self.sendBytes(bytes(outputArray))
@@ -336,6 +330,7 @@ def main(port):
     demo.stopLedsDemoThread()
     myPanel.drawBMP('gif/resized_scissors.gif', x0=40)
     demo.startLedsDemoThread()
+    time.sleep(1)
 
     # bar graphs
     demo.runDemoBarGraphs()
@@ -353,10 +348,12 @@ def main(port):
     demo.stopLedsDemoThread()
     myPanel.clearScreen()
     time.sleep(1)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50)
-    myPanel.drawBMP('gif/resized_line.gif', x0=50)
     myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
     myPanel.drawBMP('gif/resized_corridor.gif', x0=40)
+    time.sleep(0.2)
+    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    myPanel.drawBMP('gif/resized_line.gif', x0=50)
+    time.sleep(0.5)
 
     demo.startLedsDemoThread()
     myPanel.drawBMP('bmp/goodbye.bmp')
