@@ -13,8 +13,10 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
    - files
  - create proper module
  - create menu helper (a la curses) to allow adding items with custom callback functions
- - keyboard to OSC example
- - OSC / MIDI monitor with bar graphs
+ - MIDI / OSC
+   - keyboard to OSC example
+   - OSC / MIDI monitor with bar graphs
+   - custom widgets for controllers / monitors? (knobs, ...)
  - [x] ~.bmp to screen~
  - [x] ~upload animated .gif to screen!~
  - allow FM and AM in Lissajous demo
