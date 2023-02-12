@@ -123,7 +123,6 @@ class MatrixOrbital:
             # pack input 8 bit image to 1 bit monocromatic pixels
             for pixelNr in range(0, width*height, 8):
                 baseAddrForByte = pixelNr
-                # TODO shift left
                 outputArray += sum([1<<(7-bit) if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+bit, bytesPerPixel)>=thresholdForBW else 0 for bit in range(8)]).to_bytes(1,'little')
 
             # send data
