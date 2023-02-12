@@ -112,16 +112,16 @@ class MatrixOrbital:
         self.writeBytes([0xfe, 0x69, index, self._barGraphs[index].getValueInPixels()])
 
     # setup
-	def setBaudRate(self, baud_rate) :
-		speed={9600:   0xCF,
-			   14400:  0x8A,
-			   19200:  0x67,
-			   28800:  0x44,
-			   38400:  0x33,
-			   57600:  0x22,
-			   76800:  0x19,
-			   115200: 0x10}[baud_rate]
-		self.writeBytes([0xfe, 0x39, speed])
+    def setBaudRate(self, baud_rate) :
+        speed={9600:   0xCF,
+               14400:  0x8A,
+               19200:  0x67,
+               28800:  0x44,
+               38400:  0x33,
+               57600:  0x22,
+               76800:  0x19,
+               115200: 0x10}[baud_rate]
+        self.writeBytes([0xfe, 0x39, speed])
 
     # Enable or disable contrast and brigness control by the keypad
     def enableKeyboardControllingContrastAndBrightness(self):
@@ -165,48 +165,48 @@ class MatrixOrbital:
     def setLedOff(self, led):
         self.setLedState(led, [1,1])
 
-	# keypad methods
-	def setAutoTransmitKeyPressed(self, state) :
-		keyword = 0x41 if state else 0x4f
-		self.writeBytes([0xfe,keyword])
-	def setAutoRepeatKeyModeResend(self, state) :
-		command_list = [0xfe, 0x60] # autorepeat off
-		if state:
-			command_list = [0xfe, 0x7e, 0x00]
-		self.writeBytes(command_list)
-	def setAutoRepeatKeyModeUpDown(self, state) :
-		command_list = [0xfe, 0x60] # autorepeat off
-		if state:
-			command_list = [0xfe, 0x7e, 0x01]
-		self.writeBytes(command_list)
-	def pollKeyPressed(self) :
-		self.writeBytes([0xfe, 0x26])
+    # keypad methods
+    def setAutoTransmitKeyPressed(self, state) :
+        keyword = 0x41 if state else 0x4f
+        self.writeBytes([0xfe,keyword])
+    def setAutoRepeatKeyModeResend(self, state) :
+        command_list = [0xfe, 0x60] # autorepeat off
+        if state:
+            command_list = [0xfe, 0x7e, 0x00]
+        self.writeBytes(command_list)
+    def setAutoRepeatKeyModeUpDown(self, state) :
+        command_list = [0xfe, 0x60] # autorepeat off
+        if state:
+            command_list = [0xfe, 0x7e, 0x01]
+        self.writeBytes(command_list)
+    def pollKeyPressed(self) :
+        self.writeBytes([0xfe, 0x26])
         return self.readBytes(self._serialDriver.in_waiting)
-	def clearKeyBuffer(self) :
-		self.writeBytes([0xfe, 0x45])
-	def setDebounceTime(self, time) :
-		self.writeBytes([0xfe, 0x55, time & 0xff])
+    def clearKeyBuffer(self) :
+        self.writeBytes([0xfe, 0x45])
+    def setDebounceTime(self, time) :
+        self.writeBytes([0xfe, 0x55, time & 0xff])
 
-	# text methods
-	def printText(self, text) :
+    # text methods
+    def printText(self, text) :
         self.writeBytes(bytes(text, 'UTF-8'))
-	def printLocatedText(self, x, y, text, font_ref_id=None) :
-		if font_ref_id : self.selectCurrentFont(font_ref_id)
-		self.setCursorMoveToPos(x,y)
-		self.printText(text)
-	def setFontMetrics(self, leftMargin=0, topMargin=0, charSpacing=1, lineSpacing=1, lastYRow=64) :
-		self.writeBytes([0xfe, 0x32, leftMargin & 0xff, topMargin & 0xff, charSpacing & 0xff, lineSpacing & 0xff, lastYRow & 0xff])
-	def selectCurrentFont(self, font_ref_id) :
-		self.writeBytes([0xfe, 0x31, font_ref_id & 0xff])
-	def cursorMoveHome(self) : 
-		self.writeBytes([0xfe, 0x48])
-	def setCursorMoveToPos(self, col, row) :
-		self.writeBytes([0xfe, 0x47, col, row])
-	def setCursorCoordinate(self, x, y) :
-		self.writeBytes([0xfe, 0x79,x,y]) 
-	def setScroll(self, state) :
-		keyword = 0x51 if state else 0x52
-		self.writeBytes([0xfe,keyword])
+    def printLocatedText(self, x, y, text, font_ref_id=None) :
+        if font_ref_id : self.selectCurrentFont(font_ref_id)
+        self.setCursorMoveToPos(x,y)
+        self.printText(text)
+    def setFontMetrics(self, leftMargin=0, topMargin=0, charSpacing=1, lineSpacing=1, lastYRow=64) :
+        self.writeBytes([0xfe, 0x32, leftMargin & 0xff, topMargin & 0xff, charSpacing & 0xff, lineSpacing & 0xff, lastYRow & 0xff])
+    def selectCurrentFont(self, font_ref_id) :
+        self.writeBytes([0xfe, 0x31, font_ref_id & 0xff])
+    def cursorMoveHome(self) : 
+        self.writeBytes([0xfe, 0x48])
+    def setCursorMoveToPos(self, col, row) :
+        self.writeBytes([0xfe, 0x47, col, row])
+    def setCursorCoordinate(self, x, y) :
+        self.writeBytes([0xfe, 0x79,x,y]) 
+    def setScroll(self, state) :
+        keyword = 0x51 if state else 0x52
+        self.writeBytes([0xfe,keyword])
 
     # graphics methods
     # show a bitmap. It could be an animated gif
@@ -252,9 +252,9 @@ class MatrixOrbital:
         self.writeBytes([0xfe, 0x70, MatrixOrbital.Helpers.sanitizeUint8(x), MatrixOrbital.Helpers.sanitizeUint8(y)])
     def drawLine(self, x0,y0,x1,y1):
         self.writeBytes([0xfe, 0x6c,x0,y0,x1,y1])
-	def drawRectangle(self, color, x0, y0, x1, y1, solid=False) :
-		keyword=0x78 if solid else 0x72
-		self.writeBytes([0xfe, keyword, 
+    def drawRectangle(self, color, x0, y0, x1, y1, solid=False) :
+        keyword=0x78 if solid else 0x72
+        self.writeBytes([0xfe, keyword, 
                          MatrixOrbital.Helpers.sanitizeUint8(color),
                          MatrixOrbital.Helpers.sanitizeUint8(x0),
                          MatrixOrbital.Helpers.sanitizeUint8(y0),
