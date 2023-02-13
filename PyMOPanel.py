@@ -96,23 +96,6 @@ class MatrixOrbital:
     def readBytes(self, requestedBytesCount):
         return self._serialDriver.read(requestedBytesCount)
 
-    # add Bar graphs
-    # direction: Vertical{Left|Right}, Horizontal{Bottom|Top}
-    def addBarGraph(self, x0, y0, x1, y1, direction):
-        if len(self._barGraphs) == MatrixOrbital.Constants.MAX_NUMBER_OF_BARS:
-            raise Exception("Cannot have more than {} bars".format(MatrixOrbital.Constants.MAX_NUMBER_OF_BARS))
-        self._barGraphs.append(MatrixOrbital.BarGraph(x0,y0,x1,y1,direction))
-
-        index = len(self._barGraphs)-1
-        directionEnumValue = 0 if direction == "VerticalBottom" else 1 if direction == "HorizontalLeft" else 2 if direction == "VerticalTop" else 3
-
-        # init bar graph
-        self.writeBytes([0xfe, 0x67, index, directionEnumValue, x0, y0, x1, y1])
-        return index
-    def setBarGraphValue(self, index, value):
-        self._barGraphs[index].setValue(value)
-        self.writeBytes([0xfe, 0x69, index, self._barGraphs[index].getValueInPixels()])
-
     # setup
     def setBaudRate(self, baud_rate) :
         speed={9600:   0xCF,
@@ -144,10 +127,12 @@ class MatrixOrbital:
         time.sleep(0.1)
     def setBrightness(self, brightness):
         self._brightness = brightness
-        self.writeBytes([0xfe, 0x99, brightness])
+        self.writeBytes([0xfe, 0x99, 
+                         MatrixOrbital.Helpers.sanitizeUint8(brightness)])
     def setContrast(self, contrast):
         self._contrast = contrast
-        self.writeBytes([0xfe, 0x50, contrast])
+        self.writeBytes([0xfe, 0x50,
+                         MatrixOrbital.Helpers.sanitizeUint8(contrast)])
 
     # LEDs control
     def setGPOState(self, gpio, value):
@@ -186,7 +171,8 @@ class MatrixOrbital:
     def clearKeyBuffer(self) :
         self.writeBytes([0xfe, 0x45])
     def setDebounceTime(self, time) :
-        self.writeBytes([0xfe, 0x55, time & 0xff])
+        self.writeBytes([0xfe, 0x55,
+                         MatrixOrbital.Helpers.sanitizeUint8(time)])
 
     # text methods
     def print(self, text, x0=None, y0=None, font_ref_id=None) :
@@ -196,20 +182,55 @@ class MatrixOrbital:
             self.setCursorMoveToPos(x0,y0)
         self.writeBytes(bytes(text, 'UTF-8') if type(text) == str else text)
     def setFontMetrics(self, leftMargin=0, topMargin=0, charSpacing=1, lineSpacing=1, lastYRow=64) :
-        self.writeBytes([0xfe, 0x32, leftMargin & 0xff, topMargin & 0xff, charSpacing & 0xff, lineSpacing & 0xff, lastYRow & 0xff])
+        self.writeBytes([0xfe, 0x32,
+                         MatrixOrbital.Helpers.sanitizeUint8(leftMargin),
+                         MatrixOrbital.Helpers.sanitizeUint8(topMargin),
+                         MatrixOrbital.Helpers.sanitizeUint8(charSpacing),
+                         MatrixOrbital.Helpers.sanitizeUint8(lineSpacing),
+                         MatrixOrbital.Helpers.sanitizeUint8(lastYRow)])
     def selectCurrentFont(self, font_ref_id) :
-        self.writeBytes([0xfe, 0x31, MatrixOrbital.Helpers.sanitizeUint8(font_ref_id)])
+        self.writeBytes([0xfe, 0x31,
+                         MatrixOrbital.Helpers.sanitizeUint8(font_ref_id)])
     def cursorMoveHome(self) : 
         self.writeBytes([0xfe, 0x48])
     def setCursorMoveToPos(self, col, row) :
-        self.writeBytes([0xfe, 0x47, MatrixOrbital.Helpers.sanitizeUint8(col), MatrixOrbital.Helpers.sanitizeUint8(row)])
+        self.writeBytes([0xfe, 0x47,
+                         MatrixOrbital.Helpers.sanitizeUint8(col),
+                         MatrixOrbital.Helpers.sanitizeUint8(row)])
     def setCursorCoordinate(self, x, y) :
-        self.writeBytes([0xfe, 0x79,MatrixOrbital.Helpers.sanitizeUint8(x),MatrixOrbital.Helpers.sanitizeUint8(y)]) 
+        self.writeBytes([0xfe, 0x79,
+                         MatrixOrbital.Helpers.sanitizeUint8(x),
+                         MatrixOrbital.Helpers.sanitizeUint8(y)]) 
     def setAutoScroll(self, state) :
         keyword = 0x51 if state else 0x52
-        self.writeBytes([0xfe,keyword])
+        self.writeBytes([0xfe, keyword])
 
     # graphics methods
+    def setDrawingColor(self, color):
+        self.writeBytes([0xfe, 0x63,
+                         MatrixOrbital.Helpers.sanitizeUint8(color)])
+    def drawPixel(self, x, y):
+        self.writeBytes([0xfe, 0x70,
+                         MatrixOrbital.Helpers.sanitizeUint8(x),
+                         MatrixOrbital.Helpers.sanitizeUint8(y)])
+    def drawLine(self, x0,y0,x1,y1):
+        self.writeBytes([0xfe, 0x6c,
+                         MatrixOrbital.Helpers.sanitizeUint8(x0),
+                         MatrixOrbital.Helpers.sanitizeUint8(y0),
+                         MatrixOrbital.Helpers.sanitizeUint8(x1),
+                         MatrixOrbital.Helpers.sanitizeUint8(y1)])
+    def continueLine(self, x,y):
+        self.writeBytes([0xfe, 0x65,
+                         MatrixOrbital.Helpers.sanitizeUint8(x),
+                         MatrixOrbital.Helpers.sanitizeUint8(y)])
+    def drawRectangle(self, color, x0, y0, x1, y1, solid=False) :
+        keyword=0x78 if solid else 0x72
+        self.writeBytes([0xfe, keyword, 
+                         MatrixOrbital.Helpers.sanitizeUint8(color),
+                         MatrixOrbital.Helpers.sanitizeUint8(x0),
+                         MatrixOrbital.Helpers.sanitizeUint8(y0),
+                         MatrixOrbital.Helpers.sanitizeUint8(x1),
+                         MatrixOrbital.Helpers.sanitizeUint8(y1)])
     # show a bitmap. It could be an animated gif
     def uploadAndShowBitmap(self, inputFilename, x0=0, y0=0, thresholdForBW=50, inverted = False):
         time.sleep(0.2) # otherwise transfer may fail
@@ -248,20 +269,23 @@ class MatrixOrbital:
             # send data
             self.writeBytes(bytes(outputArray))
 
-    def setDrawingColor(self, color):
-        self.writeBytes([0xfe, 0x63, MatrixOrbital.Helpers.sanitizeUint8(color)])
-    def drawPixel(self, x, y):
-        self.writeBytes([0xfe, 0x70, MatrixOrbital.Helpers.sanitizeUint8(x), MatrixOrbital.Helpers.sanitizeUint8(y)])
-    def drawLine(self, x0,y0,x1,y1):
-        self.writeBytes([0xfe, 0x6c,x0,y0,x1,y1])
-    def drawRectangle(self, color, x0, y0, x1, y1, solid=False) :
-        keyword=0x78 if solid else 0x72
-        self.writeBytes([0xfe, keyword, 
-                         MatrixOrbital.Helpers.sanitizeUint8(color),
-                         MatrixOrbital.Helpers.sanitizeUint8(x0),
-                         MatrixOrbital.Helpers.sanitizeUint8(y0),
-                         MatrixOrbital.Helpers.sanitizeUint8(x1),
-                         MatrixOrbital.Helpers.sanitizeUint8(y1)])
+    # add Bar graphs
+    # direction: Vertical{Left|Right}, Horizontal{Bottom|Top}
+    def addBarGraph(self, x0, y0, x1, y1, direction):
+        if len(self._barGraphs) == MatrixOrbital.Constants.MAX_NUMBER_OF_BARS:
+            raise Exception("Cannot have more than {} bars".format(MatrixOrbital.Constants.MAX_NUMBER_OF_BARS))
+        self._barGraphs.append(MatrixOrbital.BarGraph(x0,y0,x1,y1,direction))
+
+        index = len(self._barGraphs)-1
+        directionEnumValue = 0 if direction == "VerticalBottom" else 1 if direction == "HorizontalLeft" else 2 if direction == "VerticalTop" else 3
+
+        # init bar graph
+        self.writeBytes([0xfe, 0x67, index, directionEnumValue, x0, y0, x1, y1])
+        return index
+    def setBarGraphValue(self, index, value):
+        self._barGraphs[index].setValue(value)
+        self.writeBytes([0xfe, 0x69, index, self._barGraphs[index].getValueInPixels()])
+
 
     # filesystem
     def dumpFileFromFilesystem(self, fontNoBitmap, fileId, outputFilename):
