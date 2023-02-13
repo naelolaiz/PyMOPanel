@@ -7,12 +7,15 @@ def main(port):
     myPanel = MatrixOrbital(port=port)
 
     # dump complete filesystem to a file
-    myPanel.dumpCompleteFilesystem('filesystem.data')
+    #myPanel.dumpCompleteFilesystem('filesystem.data')
 
     time.sleep(0.2)
 
-    print(myPanel.getFilesystemSpace())
-    print(str(myPanel.getFilesystemDirectory()))
+    print("filesystem space: {}".format(myPanel.getFilesystemSpace()))
+
+    (used,unused) = myPanel.getFilesystemDirectory()
+    print("used: {}".format(str(used)))
+    print("unused: {}".format(str(unused)))
 
     # dump bitmap 1 to a file
     #myPanel.downloadFile(0, 1, 'bitmap1_output.data')

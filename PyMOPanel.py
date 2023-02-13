@@ -295,19 +295,26 @@ class MatrixOrbital:
 
     def getFilesystemDirectory(self):
         self.writeBytes([0xfe, 0xb3])
-        entriesCount = int.from_bytes(self.readBytes(1), byteorder='little', signed=False)
-        entries = [(self.readBytes(1) != 0, # flag - used if not 0
-                    self.readBytes(1), # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
-                    int.from_bytes(self.readBytes(2), byteorder='little', signed=False) # file size
-                   ) for entryNumber in range(entriesCount)]
-        return entries
+        entriesCount = self.readBytes(1)[0]
+        unused_entries = []
+        used_entries = []
+        for entryNumber in range(entriesCount):
+            used = self.readBytes(1)[0] != 0
+            # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
+            typeAndFileId = self.readBytes(1)[0]
+            isBitmapNotIcon = bool(typeAndFileId & 1)
+            fileId = typeAndFileId >> 1
+            fileSize = int.from_bytes(self.readBytes(2), byteorder='little', signed=False)
+            container = used_entries if used else unused_entries
+            container += [("bitmap" if isBitmapNotIcon else "icon", fileId, fileSize)]
+        return (used_entries, unused_entries)
         
     def downloadFile(self, fontNoBitmap, fileId, outputFilename):
         self._serialDriver.reset_input_buffer()
         self.writeBytes([0xfe, 0xb2, 0 if fontNoBitmap else 1, fileId])
         fileSizeInBytes = int.from_bytes(self.readBytes(4), byteorder='little', signed=False) - 2
-        width  = int.from_bytes(self.readBytes(1), byteorder='little', signed=False)
-        height = int.from_bytes(self.readBytes(1), byteorder='little', signed=False)
+        width  = self.readBytes(1)[0]
+        height = self.readBytes(1)[0]
         print('Downloading {} {} from panel filesystem to {}...'.format('font' if fontNoBitmap else 'bitmap', fileId, outputFilename))
         open(outputFilename+'.info', 'w').writelines(['width: {}\n'.format(width), 'height: {}\n'.format(height)])
         open(outputFilename, 'wb').write(self.readBytes(fileSizeInBytes))
