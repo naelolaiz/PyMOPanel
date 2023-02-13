@@ -12,10 +12,7 @@ def main(port):
     time.sleep(0.2)
 
     print("filesystem space: {}".format(myPanel.getFilesystemSpace()))
-
-    (used,unused) = myPanel.getFilesystemDirectory()
-    print("used: {}".format(str(used)))
-    print("unused: {}".format(str(unused)))
+    print("filesystem content: {}".format(str(myPanel.getFilesystemDirectory())))
 
     # dump bitmap 1 to a file
     #myPanel.downloadFile(0, 1, 'bitmap1_output.data')

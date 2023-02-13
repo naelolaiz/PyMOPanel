@@ -293,21 +293,21 @@ class MatrixOrbital:
         self.writeBytes([0xfe, 0xaf])
         return int.from_bytes(self.readBytes(4), byteorder='little', signed=False)
 
-    def getFilesystemDirectory(self):
+    def getFilesystemDirectory(self, usedNotUnusedEntries = True):
         self.writeBytes([0xfe, 0xb3])
         entriesCount = self.readBytes(1)[0]
-        unused_entries = []
-        used_entries = []
+        entries = []
         for entryNumber in range(entriesCount):
             used = self.readBytes(1)[0] != 0
+            if usedNotUnusedEntries != used:
+                continue
             # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
             typeAndFileId = self.readBytes(1)[0]
             isBitmapNotIcon = bool(typeAndFileId & 1)
             fileId = typeAndFileId >> 1
             fileSize = int.from_bytes(self.readBytes(2), byteorder='little', signed=False)
-            container = used_entries if used else unused_entries
-            container += [("bitmap" if isBitmapNotIcon else "icon", fileId, fileSize)]
-        return (used_entries, unused_entries)
+            entries += [("bitmap" if isBitmapNotIcon else "icon", fileId, fileSize)]
+        return entries
         
     def downloadFile(self, fontNoBitmap, fileId, outputFilename):
         self._serialDriver.reset_input_buffer()
