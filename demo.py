@@ -116,8 +116,8 @@ def main(port):
     myPanel.enableKeyboardControllingContrastAndBrightness()
 
     # turn screen on
-    myPanel.setScreen(True)
     myPanel.clearScreen()
+    myPanel.setScreen(True)
 
     # simple text
     myPanel.print('hello world!\n')

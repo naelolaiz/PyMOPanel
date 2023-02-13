@@ -138,8 +138,10 @@ class MatrixOrbital:
     # screen methods
     def clearScreen(self):
         self.writeBytes([0xfe, 0x58])
+        time.sleep(0.1)
     def setScreen(self, value):
         self.writeBytes([0xfe, 0x42 if value else 0x46])
+        time.sleep(0.1)
     def setBrightness(self, brightness):
         self._brightness = brightness
         self.writeBytes([0xfe, 0x99, brightness])
