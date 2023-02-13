@@ -47,18 +47,18 @@ class Demo:
 
     def runDemoPressedKeys(self, charsCount):
         self._panel.clearScreen()
-        self._panel.printText('Press {} keys to finish'.format(charsCount))
+        self._panel.print('Press {} keys to finish'.format(charsCount))
         self._panel.setAutoTransmitKeyPressed(True)
         for i in range(charsCount):
             char = self._panel.readBytes(1)
-            self._panel.printLocatedText(7, 0, str(charsCount-i-1))
-            self._panel.printLocatedText(i+1, 3, char)
+            self._panel.print(str(charsCount-i-1), x0=7, y0=0)
+            self._panel.print(char, x0=i+1, y0=3)
 
-    def runDemoSpirals(self):
+    def runDemoSpirals(self, spiralsCount):
         self._panel.clearScreen()
         self.drawSpiral(200, [MatrixOrbital.Constants.CENTER_X, MatrixOrbital.Constants.CENTER_Y], MatrixOrbital.Constants.PANEL_HEIGHT)
         sign = 1
-        for i in range(22):
+        for i in range(spiralsCount-1):
             offsetX = randint(-75,75)
             offsetY = randint(-20,20)
             self.drawSpiral(200, 
@@ -120,7 +120,7 @@ def main(port):
     myPanel.clearScreen()
 
     # simple text
-    myPanel.printText('hello world!\n')
+    myPanel.print('hello world!\n')
     time.sleep(2)
     myPanel.clearScreen()
 
@@ -144,8 +144,8 @@ def main(port):
 
     time.sleep(1)
 
-    # draw some spirals
-    demo.runDemoSpirals()
+    # draw 10 spirals
+    demo.runDemoSpirals(10)
     
     # stop keyboard thread 
     myPanel.disableKeyboardControllingContrastAndBrightness()

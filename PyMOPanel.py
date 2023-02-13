@@ -55,7 +55,7 @@ class MatrixOrbital:
 # misc helpers
     class Helpers:
         def sanitizeUint8(value):
-            return max(0,value) & 0xFF
+            return max(0,int(value)) & 0xFF
         def sumChannels(inputByteArray, offset, dataSize):
             dataSize=int(dataSize)
             sum=0
@@ -146,8 +146,6 @@ class MatrixOrbital:
     def setContrast(self, contrast):
         self._contrast = contrast
         self.writeBytes([0xfe, 0x50, contrast])
-    def setCursorPos(self, col, row):
-        self.writeBytes([0xfe, 0x47,col,row])
 
     # LEDs control
     def setGPOState(self, gpio, value):
@@ -189,22 +187,23 @@ class MatrixOrbital:
         self.writeBytes([0xfe, 0x55, time & 0xff])
 
     # text methods
-    def printText(self, text) :
+    def print(self, text, x0=None, y0=None, font_ref_id=None) :
+        if font_ref_id:
+            self.selectCurrentFont(font_ref_id)
+        if x0 != None and y0 != None:
+            self.setCursorMoveToPos(x0,y0)
         self.writeBytes(bytes(text, 'UTF-8') if type(text) == str else text)
-    def printLocatedText(self, x, y, text, font_ref_id=None) :
-        if font_ref_id : self.selectCurrentFont(font_ref_id)
-        self.setCursorMoveToPos(x,y)
-        self.printText(text)
+
     def setFontMetrics(self, leftMargin=0, topMargin=0, charSpacing=1, lineSpacing=1, lastYRow=64) :
         self.writeBytes([0xfe, 0x32, leftMargin & 0xff, topMargin & 0xff, charSpacing & 0xff, lineSpacing & 0xff, lastYRow & 0xff])
     def selectCurrentFont(self, font_ref_id) :
-        self.writeBytes([0xfe, 0x31, font_ref_id & 0xff])
+        self.writeBytes([0xfe, 0x31, MatrixOrbital.Helpers.sanitizeUint8(font_ref_id)])
     def cursorMoveHome(self) : 
         self.writeBytes([0xfe, 0x48])
     def setCursorMoveToPos(self, col, row) :
-        self.writeBytes([0xfe, 0x47, col, row])
+        self.writeBytes([0xfe, 0x47, MatrixOrbital.Helpers.sanitizeUint8(col), MatrixOrbital.Helpers.sanitizeUint8(row)])
     def setCursorCoordinate(self, x, y) :
-        self.writeBytes([0xfe, 0x79,x,y]) 
+        self.writeBytes([0xfe, 0x79,MatrixOrbital.Helpers.sanitizeUint8(x),MatrixOrbital.Helpers.sanitizeUint8(y)]) 
     def setScroll(self, state) :
         keyword = 0x51 if state else 0x52
         self.writeBytes([0xfe,keyword])
