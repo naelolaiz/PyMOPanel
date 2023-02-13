@@ -5,6 +5,8 @@ import time
 from threading import Lock 
 import traceback
 from PIL import Image
+from enum import Enum
+from math import ceil
 
 class MatrixOrbital:
 # panel constants
@@ -21,6 +23,11 @@ class MatrixOrbital:
         CENTER_KEY         = 0x45
         TOP_LEFT_KEY       = 0x41
         BOTTOM_LEFT_KEY    = 0x47
+
+    class FileType(Enum):
+        FONT   = 0
+        BITMAP = 1
+    
 
 # class for handling threaded serial input. Note that (static) attributes need to be set. _panel is mandatory, _customCallbackForDataReceived is optional. brightnessAndContrastControlCallback is provided as an example of default behavior. Thread can be started and stopped
     class ThreadSerialListener(serial.threaded.Protocol):
@@ -289,35 +296,65 @@ class MatrixOrbital:
 
     # filesystem
     def getFilesystemSpace(self):
-        self._serialDriver.reset_input_buffer()
         self.writeBytes([0xfe, 0xaf])
         return int.from_bytes(self.readBytes(4), byteorder='little', signed=False)
 
-    def getFilesystemDirectory(self, usedNotUnusedEntries = True):
+    def getFilesystemDirectory(self):
+        self._serialDriver.reset_input_buffer()
         self.writeBytes([0xfe, 0xb3])
         entriesCount = self.readBytes(1)[0]
         entries = []
         for entryNumber in range(entriesCount):
             used = self.readBytes(1)[0] != 0
-            if usedNotUnusedEntries != used:
+            if not used:
+                #read the remaining bytes and ignore them
+                self.readBytes(3)
                 continue
             # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
             typeAndFileId = self.readBytes(1)[0]
-            isBitmapNotIcon = bool(typeAndFileId & 1)
+            fileType = MatrixOrbital.FileType(typeAndFileId & 1)
             fileId = typeAndFileId >> 1
             fileSize = int.from_bytes(self.readBytes(2), byteorder='little', signed=False)
-            entries += [("bitmap" if isBitmapNotIcon else "icon", fileId, fileSize)]
+            entries += [(fileType, fileId, fileSize)]
         return entries
         
-    def downloadFile(self, fontNoBitmap, fileId, outputFilename):
+    def downloadFile(self, fileType, fileId, outputFilename):
         self._serialDriver.reset_input_buffer()
-        self.writeBytes([0xfe, 0xb2, 0 if fontNoBitmap else 1, fileId])
-        fileSizeInBytes = int.from_bytes(self.readBytes(4), byteorder='little', signed=False) - 2
-        width  = self.readBytes(1)[0]
-        height = self.readBytes(1)[0]
-        print('Downloading {} {} from panel filesystem to {}...'.format('font' if fontNoBitmap else 'bitmap', fileId, outputFilename))
-        open(outputFilename+'.info', 'w').writelines(['width: {}\n'.format(width), 'height: {}\n'.format(height)])
-        open(outputFilename, 'wb').write(self.readBytes(fileSizeInBytes))
+        self.writeBytes([0xfe, 0xb2, fileType.value, fileId])
+        fileSizeInBytes = int.from_bytes(self.readBytes(4), byteorder='little', signed=False)
+        if fileSizeInBytes == 0:
+            print("File size == 0! Aborting download")
+            return
+        buffer = self.readBytes(fileSizeInBytes)
+        bufferIndex = 0
+        header = {}
+        header['fileSizeIncludingHeader'] = fileSizeInBytes
+        header['width'] = buffer[bufferIndex]
+        bufferIndex += 1
+        header['height'] = buffer[bufferIndex]
+        bufferIndex += 1
+        if fileType == MatrixOrbital.FileType.FONT:
+            header['ascii_start_value'] = buffer[bufferIndex]
+            bufferIndex += 1
+            header['ascii_end_value'] = buffer[bufferIndex]
+            bufferIndex += 1
+            charTable = []
+            charData = []
+            for ch in range(header['ascii_start_value'], header['ascii_end_value']+1):
+                thisTable = {}
+                offsetValue = buffer[bufferIndex:bufferIndex+2]
+                bufferIndex += 2
+                thisTable['offset'] = int.from_bytes(offsetValue, byteorder='big')
+                thisTable['char_width'] = buffer[bufferIndex]
+                bufferIndex += 1
+                bytesPerChar = ceil(header['height'] * thisTable['char_width'] / 8.)
+                charData += [buffer[thisTable['offset']:thisTable['offset']+bytesPerChar+1]]
+                charTable += [thisTable]
+            header['charTable'] = charTable
+            header['charData'] = charData
+        print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
+        open(outputFilename+'.info', 'w').write("{}\n".format(str(header)))
+        open(outputFilename, 'wb').write(buffer[bufferIndex:])
         print('done!')
 
     def dumpCompleteFilesystem(self, outputFilename):
