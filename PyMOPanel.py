@@ -288,7 +288,21 @@ class MatrixOrbital:
 
 
     # filesystem
-    def dumpFileFromFilesystem(self, fontNoBitmap, fileId, outputFilename):
+    def getFilesystemSpace(self):
+        self._serialDriver.reset_input_buffer()
+        self.writeBytes([0xfe, 0xaf])
+        return int.from_bytes(self.readBytes(4), byteorder='little', signed=False)
+
+    def getFilesystemDirectory(self):
+        self.writeBytes([0xfe, 0xb3])
+        entriesCount = int.from_bytes(self.readBytes(1), byteorder='little', signed=False)
+        entries = [(self.readBytes(1) != 0, # flag - used if not 0
+                    self.readBytes(1), # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
+                    int.from_bytes(self.readBytes(2), byteorder='little', signed=False) # file size
+                   ) for entryNumber in range(entriesCount)]
+        return entries
+        
+    def downloadFile(self, fontNoBitmap, fileId, outputFilename):
         self._serialDriver.reset_input_buffer()
         self.writeBytes([0xfe, 0xb2, 0 if fontNoBitmap else 1, fileId])
         fileSizeInBytes = int.from_bytes(self.readBytes(4), byteorder='little', signed=False) - 2

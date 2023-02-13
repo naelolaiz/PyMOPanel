@@ -101,16 +101,9 @@ class Demo:
                 phaseY += incPhaseY
                 time.sleep(0.003)
 
-
 def main(port):
     myPanel = MatrixOrbital(port=port)
     demo = Demo(myPanel)
-
-    # dump complete filesystem to a file
-    #myPanel.dumpCompleteFilesystem('filesystem.data')
-
-    # dump bitmap 1 to a file
-    #myPanel.dumpFileFromFilesystem(0, 1, 'bitmap1_output.data')
 
     # enable controlling brightness and contrast by the keyboard
     myPanel.enableKeyboardControllingContrastAndBrightness()
