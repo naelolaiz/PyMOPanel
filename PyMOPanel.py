@@ -193,7 +193,6 @@ class MatrixOrbital:
         if x0 != None and y0 != None:
             self.setCursorMoveToPos(x0,y0)
         self.writeBytes(bytes(text, 'UTF-8') if type(text) == str else text)
-
     def setFontMetrics(self, leftMargin=0, topMargin=0, charSpacing=1, lineSpacing=1, lastYRow=64) :
         self.writeBytes([0xfe, 0x32, leftMargin & 0xff, topMargin & 0xff, charSpacing & 0xff, lineSpacing & 0xff, lastYRow & 0xff])
     def selectCurrentFont(self, font_ref_id) :
@@ -204,7 +203,7 @@ class MatrixOrbital:
         self.writeBytes([0xfe, 0x47, MatrixOrbital.Helpers.sanitizeUint8(col), MatrixOrbital.Helpers.sanitizeUint8(row)])
     def setCursorCoordinate(self, x, y) :
         self.writeBytes([0xfe, 0x79,MatrixOrbital.Helpers.sanitizeUint8(x),MatrixOrbital.Helpers.sanitizeUint8(y)]) 
-    def setScroll(self, state) :
+    def setAutoScroll(self, state) :
         keyword = 0x51 if state else 0x52
         self.writeBytes([0xfe,keyword])
 
@@ -217,10 +216,10 @@ class MatrixOrbital:
         height = img.height
         isAnimation = hasattr(img,"n_frames")
         frames = img.n_frames if isAnimation else 2
-        def getValueForAboveThreshold(bit, inverted):
-            return 1<<(7-bit) if inverted else 0
-        def getValueForBelowThreshold(bit, inverted):
-            return getValueForAboveThreshold(bit, not inverted)
+        def getValueForAboveThreshold(bitIndex, inverted):
+            return 1<<(7-bitIndex) if inverted else 0
+        def getValueForBelowThreshold(bitIndex, inverted):
+            return getValueForAboveThreshold(bitIndex, not inverted)
 
         for frame in range(1,frames):
             if isAnimation: 
@@ -242,10 +241,11 @@ class MatrixOrbital:
             # pack input 8 bit image to 1 bit monocromatic pixels
             for pixelNr in range(0, width*height, 8):
                 baseAddrForByte = pixelNr
-                outputArray += sum([getValueForAboveThreshold(bit,inverted) if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+bit, bytesPerPixel)>=thresholdForBW else getValueForBelowThreshold(bit,inverted) for bit in range(8)]).to_bytes(1,'little')
+                outputArray += sum([getValueForAboveThreshold(bitIndex,inverted) if MatrixOrbital.Helpers.sumChannels(buffer, pixelNr+bitIndex, bytesPerPixel)>=thresholdForBW else getValueForBelowThreshold(bitIndex,inverted) for bitIndex in range(8)]).to_bytes(1,'little')
 
             # send data
             self.writeBytes(bytes(outputArray))
+
     def setDrawingColor(self, color):
         self.writeBytes([0xfe, 0x63, MatrixOrbital.Helpers.sanitizeUint8(color)])
     def drawPixel(self, x, y):
