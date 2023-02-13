@@ -8,6 +8,9 @@ from PIL import Image
 from enum import Enum
 from math import ceil
 
+import numpy as np
+import pprint
+
 class MatrixOrbital:
 # panel constants
     class Constants:
@@ -340,6 +343,7 @@ class MatrixOrbital:
             bufferIndex += 1
             charTable = []
             charData = []
+            myChars = {}
             for ch in range(header['ascii_start_value'], header['ascii_end_value']+1):
                 thisTable = {}
                 offsetValue = buffer[bufferIndex:bufferIndex+2]
@@ -347,11 +351,19 @@ class MatrixOrbital:
                 thisTable['offset'] = int.from_bytes(offsetValue, byteorder='big')
                 thisTable['char_width'] = buffer[bufferIndex]
                 bufferIndex += 1
-                bytesPerChar = ceil(header['height'] * thisTable['char_width'] / 8.)
-                charData += [buffer[thisTable['offset']:thisTable['offset']+bytesPerChar+1]]
+                bitsPerChar =int(header['height'] * thisTable['char_width'])
+                bytesPerChar = ceil(bitsPerChar / 8.)
+                thisCharData = buffer[thisTable['offset']:thisTable['offset']+bytesPerChar+1] 
+                # decode char
+                rawBitsIncludingZeroPadding=np.unpackbits(np.frombuffer(thisCharData, dtype=np.uint8), axis=0)
+                myChars[chr(ch)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1,thisTable['char_width'])
+                charData += [thisCharData]
                 charTable += [thisTable]
             header['charTable'] = charTable
             header['charData'] = charData
+            with open(outputFilename+'.chars', 'w') as charsFile:
+                charsFile.write(pprint.pformat(myChars))
+
         print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
         open(outputFilename+'.info', 'w').write("{}\n".format(str(header)))
         open(outputFilename, 'wb').write(buffer[bufferIndex:])
