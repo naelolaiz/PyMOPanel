@@ -306,18 +306,22 @@ class MatrixOrbital:
         self._serialDriver.reset_input_buffer()
         self.writeBytes([0xfe, 0xb3])
         entriesCount = self.readBytes(1)[0]
+        buffer = self.readBytes(4 * entriesCount)
         entries = []
         for entryNumber in range(entriesCount):
-            used = self.readBytes(1)[0] != 0
+            offset = entryNumber * 4
+            used = buffer[offset] != 0
+            offset += 1
             if not used:
-                #read the remaining bytes and ignore them
-                self.readBytes(3)
+                # ignore the remaining bytes
                 continue
             # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
-            typeAndFileId = self.readBytes(1)[0]
+            typeAndFileId = buffer[offset]
+            offset += 1
             fileType = MatrixOrbital.FileType(typeAndFileId & 1)
             fileId = typeAndFileId >> 1
-            fileSize = int.from_bytes(self.readBytes(2), byteorder='little', signed=False)
+            fileSize = int.from_bytes(buffer[offset:offset+2], byteorder='little', signed=False)
+            offset += 2 
             entries += [(fileType, fileId, fileSize)]
         return entries
         
@@ -363,10 +367,9 @@ class MatrixOrbital:
             header['charData'] = charData
             with open(outputFilename+'.chars', 'w') as charsFile:
                 charsFile.write(pprint.pformat(myChars))
-
         print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
         open(outputFilename+'.info', 'w').write("{}\n".format(str(header)))
-        open(outputFilename, 'wb').write(buffer[bufferIndex:])
+        open(outputFilename, 'wb').write(buffer)
         print('done!')
 
     def dumpCompleteFilesystem(self, outputFilename):

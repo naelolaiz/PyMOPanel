@@ -21,7 +21,7 @@ def main(port):
             print("File {} is empty! Skipping it".format(fileId))
             continue
         outputFilename = '{}_{}.data'.format(fileType.name, str(fileId))
-        print("Writting {} with size {} (minus header).".format(outputFilename, fileSize))
+        print("Writting {} with size {}.".format(outputFilename, fileSize))
         myPanel.downloadFile(fileType, fileId, outputFilename)
 
 if __name__ == '__main__':
