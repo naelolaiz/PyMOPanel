@@ -7,10 +7,9 @@ def main(port):
     myPanel = MatrixOrbital(port=port)
 
     # dump complete filesystem to a file
-    #myPanel.dumpCompleteFilesystem('filesystem.data')
+    myPanel.dumpCompleteFilesystem('filesystem.data')
 
-
-    print("filesystem space: {}".format(myPanel.getFilesystemSpace()))
+    print("filesystem free space: {} bytes".format(myPanel.getFilesystemFreeSpaceInBytes()))
 
     filesystemContent = myPanel.getFilesystemDirectory()
     print("filesystem content: {}".format(str(filesystemContent)))

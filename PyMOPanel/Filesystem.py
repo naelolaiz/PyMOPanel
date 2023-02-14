@@ -298,7 +298,7 @@ class MatrixOrbital:
 
 
     # filesystem
-    def getFilesystemSpace(self):
+    def getFilesystemFreeSpaceInBytes(self):
         self.writeBytes([0xfe, 0xaf])
         return int.from_bytes(self.readBytes(4), byteorder='little', signed=False)
 

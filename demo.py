@@ -68,7 +68,7 @@ class Demo:
                                    incRadius = 0.02 + 0.25 * random())
             sign = sign * -1
 
-    def runDemoBarGraphs(self):
+    def runDemoBarGraphs(self, changesCount, sleepTimeBetweenChange = 0.03):
         self._panel.clearScreen()
         time.sleep(0.2)
         numberOfBars = MatrixOrbital.Constants.MAX_NUMBER_OF_BARS
@@ -77,12 +77,11 @@ class Demo:
             index = self._panel.addBarGraph(i,          0,
                                             i+deltaX-1, MatrixOrbital.Constants.PANEL_HEIGHT,
                                             "VerticalBottom")
-
         scaler = 1/1.3
-        for i in range(400):
+        for i in range(changesCount):
             bar = randint(0,numberOfBars-1)
             self._panel.setBarGraphValue(bar, random()*scaler)
-            time.sleep(0.03)
+            time.sleep(sleepTimeBetweenChange)
 
     def runDemoLissajous(self, cycles):
         self._panel.clearScreen()
@@ -128,7 +127,7 @@ def main(port):
     time.sleep(1)
 
     # bar graphs
-    demo.runDemoBarGraphs()
+    demo.runDemoBarGraphs(350)
 
     time.sleep(1)
 
