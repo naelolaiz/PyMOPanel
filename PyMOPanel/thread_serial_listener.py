@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import serial.threaded
 import traceback
-from .Helpers import *
+from .helpers import *
 
 # class for handling threaded serial input. Note that (static) attributes need to be set. _panel is mandatory, _customCallbackForDataReceived is optional. brightnessAndContrastControlCallback is provided as an example of default behavior. Thread can be started and stopped
 class ThreadSerialListener(serial.threaded.Protocol):

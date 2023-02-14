@@ -1,32 +1,14 @@
-#!/usr/bin/env python3
 import serial
 import time
 from threading import Lock 
 from PIL import Image
-from enum import Enum
-from math import ceil
 
-import numpy as np
-import pprint
-
-from .Constants import *
-from .Helpers import *
-from .ThreadSerialListener import ThreadSerialListener
+from .constants import *
+from .helpers import *
+from .thread_serial_listener import ThreadSerialListener
+from .bar_graph import *
 
 class MatrixOrbital:
-    class BarGraph:
-        def __init__(self, x0, y0, x1, y1, direction):
-            self._x0 = x0
-            self._y0 = y0
-            self._x1 = x1
-            self._y1 = y1
-            self._direction = direction
-            self._delta = abs(x0-x1) if direction == 'HorizontalLeft' or direction == 'HorizontalRight' else abs(y0-y1)
-            self._value = 0.
-        def setValue(self, value):
-            self._value = value
-        def getValueInPixels(self):
-            return int(self._value * self._delta)
 
     def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
         self._port = port
@@ -36,17 +18,22 @@ class MatrixOrbital:
         self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
         if not self._serialDriver.is_open:
             raise Exception("MatrixOrbital device not found")
-        self._barGraphs = []
+        self._barGraphManager = BarGraphManager(self)
         self.setBrightness(200)
         self.setContrast(128)
-
+        
     # serial write and read functions
     def writeBytes(self, buffer):
         with self._serialSendLock:
             self._serialDriver.write(buffer)
+
     def readBytes(self, requestedBytesCount):
         return self._serialDriver.read(requestedBytesCount)
 
+    def resetInputState(self):
+        self.clearKeyBuffer()
+        self._serialDriver.reset_input_buffer()
+        
     # setup
     def setBaudRate(self, baud_rate) :
         speed={9600:   0xCF,
@@ -221,102 +208,9 @@ class MatrixOrbital:
             self.writeBytes(bytes(outputArray))
 
     # add Bar graphs
-    # direction: Vertical{Left|Right}, Horizontal{Bottom|Top}
     def addBarGraph(self, x0, y0, x1, y1, direction):
-        if len(self._barGraphs) == MAX_NUMBER_OF_BARS:
-            raise Exception("Cannot have more than {} bars".format(MAX_NUMBER_OF_BARS))
-        self._barGraphs.append(MatrixOrbital.BarGraph(x0,y0,x1,y1,direction))
+        self._barGraphManager.addBarGraph(x0, y0, x1, y1, direction)
 
-        index = len(self._barGraphs)-1
-        directionEnumValue = 0 if direction == "VerticalBottom" else 1 if direction == "HorizontalLeft" else 2 if direction == "VerticalTop" else 3
-
-        # init bar graph
-        self.writeBytes([0xfe, 0x67, index, directionEnumValue, x0, y0, x1, y1])
-        return index
     def setBarGraphValue(self, index, value):
-        self._barGraphs[index].setValue(value)
-        self.writeBytes([0xfe, 0x69, index, self._barGraphs[index].getValueInPixels()])
+        self._barGraphManager.setBarGraphValue(index, value)
 
-
-    # filesystem
-    def getFilesystemFreeSpaceInBytes(self):
-        self.writeBytes([0xfe, 0xaf])
-        return int.from_bytes(self.readBytes(4), byteorder='little', signed=False)
-
-    def getFilesystemDirectory(self):
-        self._serialDriver.reset_input_buffer()
-        self.writeBytes([0xfe, 0xb3])
-        entriesCount = self.readBytes(1)[0]
-        buffer = self.readBytes(4 * entriesCount)
-        entries = []
-        for entryNumber in range(entriesCount):
-            offset = entryNumber * 4
-            used = buffer[offset] != 0
-            offset += 1
-            if not used:
-                # ignore the remaining bytes
-                continue
-            # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
-            typeAndFileId = buffer[offset]
-            offset += 1
-            fileType = MatrixOrbital.FileType(typeAndFileId & 1)
-            fileId = typeAndFileId >> 1
-            fileSize = int.from_bytes(buffer[offset:offset+2], byteorder='little', signed=False)
-            offset += 2 
-            entries += [(fileType, fileId, fileSize)]
-        return entries
-        
-    def downloadFile(self, fileType, fileId, outputFilename):
-        self._serialDriver.reset_input_buffer()
-        self.writeBytes([0xfe, 0xb2, fileType.value, fileId])
-        fileSizeInBytes = int.from_bytes(self.readBytes(4), byteorder='little', signed=False)
-        if fileSizeInBytes == 0:
-            print("File size == 0! Aborting download")
-            return
-        buffer = self.readBytes(fileSizeInBytes)
-        bufferIndex = 0
-        header = {}
-        header['fileSizeIncludingHeader'] = fileSizeInBytes
-        header['width'] = buffer[bufferIndex]
-        bufferIndex += 1
-        header['height'] = buffer[bufferIndex]
-        bufferIndex += 1
-        if fileType == MatrixOrbital.FileType.FONT:
-            header['ascii_start_value'] = buffer[bufferIndex]
-            bufferIndex += 1
-            header['ascii_end_value'] = buffer[bufferIndex]
-            bufferIndex += 1
-            charTable = []
-            charData = []
-            myChars = {}
-            for ch in range(header['ascii_start_value'], header['ascii_end_value']+1):
-                thisTable = {}
-                offsetValue = buffer[bufferIndex:bufferIndex+2]
-                bufferIndex += 2
-                thisTable['offset'] = int.from_bytes(offsetValue, byteorder='big')
-                thisTable['char_width'] = buffer[bufferIndex]
-                bufferIndex += 1
-                bitsPerChar =int(header['height'] * thisTable['char_width'])
-                bytesPerChar = ceil(bitsPerChar / 8.)
-                thisCharData = buffer[thisTable['offset']:thisTable['offset']+bytesPerChar+1] 
-                # decode char
-                rawBitsIncludingZeroPadding=np.unpackbits(np.frombuffer(thisCharData, dtype=np.uint8), axis=0)
-                myChars[chr(ch)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1,thisTable['char_width'])
-                charData += [thisCharData]
-                charTable += [thisTable]
-            header['charTable'] = charTable
-            header['charData'] = charData
-            with open(outputFilename+'.chars', 'w') as charsFile:
-                charsFile.write(pprint.pformat(myChars))
-        print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
-        open(outputFilename+'.info', 'w').write("{}\n".format(str(header)))
-        open(outputFilename, 'wb').write(buffer)
-        print('done!')
-
-    def dumpCompleteFilesystem(self, outputFilename):
-        self._serialDriver.reset_input_buffer()
-        self.writeBytes([0xfe, 0x30])
-        filesystemSize = int.from_bytes(self.readBytes(4), byteorder='little', signed=False)
-        print('Dumping panel filesystem to {}...'.format(outputFilename))
-        open(outputFilename, 'wb').write(self.readBytes(filesystemSize))
-        print('done!')

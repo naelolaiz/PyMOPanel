@@ -6,6 +6,8 @@ from sys import argv
 from random import random,randint
 
 from PyMOPanel import MatrixOrbital
+from PyMOPanel.constants import Constants
+from PyMOPanel.bar_graph import Direction
 
 class Demo:
     def demoThreadedLedChanges(self):
@@ -31,7 +33,7 @@ class Demo:
         while radius < maxRadius:
             x = int(centerPos[0] + cos(angle) * radius)
             y = int(centerPos[1] + sin(angle) * radius)
-            if x<0 or x>MatrixOrbital.Constants.PANEL_WIDTH or y <0 or y > MatrixOrbital.Constants.PANEL_HEIGHT:
+            if x<0 or x>Constants.PANEL_WIDTH or y <0 or y > Constants.PANEL_HEIGHT:
                 break
             self._panel.drawPixel(x,y)
             radius += incRadius
@@ -56,14 +58,14 @@ class Demo:
 
     def runDemoSpirals(self, spiralsCount):
         self._panel.clearScreen()
-        self.drawSpiral(200, [MatrixOrbital.Constants.CENTER_X, MatrixOrbital.Constants.CENTER_Y], MatrixOrbital.Constants.PANEL_HEIGHT)
+        self.drawSpiral(200, [Constants.CENTER_X, Constants.CENTER_Y], Constants.PANEL_HEIGHT)
         sign = 1
         for i in range(spiralsCount-1):
             offsetX = randint(-75,75)
             offsetY = randint(-20,20)
             self.drawSpiral(200, 
-                                   [MatrixOrbital.Constants.CENTER_X + offsetX, MatrixOrbital.Constants.CENTER_Y + offsetY],
-                                   randint(10,MatrixOrbital.Constants.PANEL_HEIGHT),
+                                   [Constants.CENTER_X + offsetX, Constants.CENTER_Y + offsetY],
+                                   randint(10,Constants.PANEL_HEIGHT),
                                    incAngle = sign * pi / randint(10,60),
                                    incRadius = 0.02 + 0.25 * random())
             sign = sign * -1
@@ -71,12 +73,12 @@ class Demo:
     def runDemoBarGraphs(self, changesCount, sleepTimeBetweenChange = 0.03):
         self._panel.clearScreen()
         time.sleep(0.2)
-        numberOfBars = MatrixOrbital.Constants.MAX_NUMBER_OF_BARS
-        deltaX = int(MatrixOrbital.Constants.PANEL_WIDTH / numberOfBars)
-        for i in range(0, MatrixOrbital.Constants.PANEL_WIDTH, deltaX):
-            index = self._panel.addBarGraph(i,          0,
-                                            i+deltaX-1, MatrixOrbital.Constants.PANEL_HEIGHT,
-                                            "VerticalBottom")
+        numberOfBars = Constants.MAX_NUMBER_OF_BARS
+        deltaX = int(Constants.PANEL_WIDTH / numberOfBars)
+        for i in range(0, Constants.PANEL_WIDTH, deltaX):
+            index = self._panel.addBarGraph(i, 0,
+                                            i+deltaX-1, Constants.PANEL_HEIGHT,
+                                            Direction(Direction.VERTICAL_BOTTOM_TO_TOP))
         scaler = 1/1.3
         for i in range(changesCount):
             bar = randint(0,numberOfBars-1)
@@ -93,8 +95,8 @@ class Demo:
             incPhaseX = random()*pi/60
             incPhaseY = random()*pi/60
             for frame in range(1500):
-                x = MatrixOrbital.Constants.CENTER_X + int(MatrixOrbital.Constants.CENTER_X * cos(phaseX))
-                y = MatrixOrbital.Constants.CENTER_Y + int(MatrixOrbital.Constants.CENTER_Y * sin(phaseY))
+                x = Constants.CENTER_X + int(Constants.CENTER_X * cos(phaseX))
+                y = Constants.CENTER_Y + int(Constants.CENTER_Y * sin(phaseY))
                 self._panel.drawPixel(x,y)
                 phaseX += incPhaseX
                 phaseY += incPhaseY
