@@ -5,34 +5,43 @@ from PIL import Image
 
 from .constants import *
 from .helpers import *
-from .thread_serial_listener import ThreadSerialListener
+from .threaded_keyboard_manager import KeyboardManager
 from .bar_graph import *
+from .screen import Screen
+from .text import Text
 
 class MatrixOrbital:
-
     def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
         self._port = port
         self._baudrate = baudrate
         self._serialSendLock = Lock()
         self._serialReceiveLock = Lock()
-        self._serialDriver = serial.Serial(port=port, baudrate=baudrate)
-        if not self._serialDriver.is_open:
+        self._serialHandler = serial.Serial(port=port, baudrate=baudrate)
+        if not self._serialHandler.is_open:
             raise Exception("MatrixOrbital device not found")
+        self._screen = Screen(self)
+        self._textControl = Text(panel       = self,
+                                 fontRefId   = 0,
+                                 autoScroll  = True,
+                                 leftMargin  = 0,
+                                 topMargin   = 0,
+                                 charSpacing = 1,
+                                 lineSpacing = 1,
+                                 lastYRow    = 64)
+        self._keyboardManager = KeyboardManager(self, self._serialHandler)
         self._barGraphManager = BarGraphManager(self)
-        self.setBrightness(200)
-        self.setContrast(128)
         
     # serial write and read functions
     def writeBytes(self, buffer):
         with self._serialSendLock:
-            self._serialDriver.write(buffer)
+            self._serialHandler.write(buffer)
 
     def readBytes(self, requestedBytesCount):
-        return self._serialDriver.read(requestedBytesCount)
+        return self._serialHandler.read(requestedBytesCount)
 
     def resetInputState(self):
         self.clearKeyBuffer()
-        self._serialDriver.reset_input_buffer()
+        self._serialHandler.reset_input_buffer()
         
     # setup
     def setBaudRate(self, baud_rate) :
@@ -46,31 +55,31 @@ class MatrixOrbital:
                115200: 0x10}[baud_rate]
         self.writeBytes([0xfe, 0x39, speed])
 
-    # Enable or disable contrast and brigness control by the keypad
+    # Enable or disable contrast and brightness control by the keypad
     def enableKeyboardControllingContrastAndBrightness(self):
-        ThreadSerialListener._customCallbackForDataReceived = ThreadSerialListener.brightnessAndContrastControlCallback
-        ThreadSerialListener._panel = self
-        self._serialListener = serial.threaded.ReaderThread(self._serialDriver, ThreadSerialListener)
-        self._serialListener.start()
+        self._keyboardManager.enableKeyboardControllingContrastAndBrightness()
+
     def disableKeyboardControllingContrastAndBrightness(self):
-        self.ThreadSerialListener._customCallbackForDataReceived = None
-        self._serialListener.stop()
+        self._keyboardManager.disableKeyboardControllingContrastAndBrightness()
 
     # screen methods
     def clearScreen(self):
-        self.writeBytes([0xfe, 0x58])
-        time.sleep(0.1)
+        self._screen.clearScreen()
+
     def setScreen(self, value):
-        self.writeBytes([0xfe, 0x42 if value else 0x46])
-        time.sleep(0.1)
+        self._screen.setScreen(value)
+
     def setBrightness(self, brightness):
-        self._brightness = brightness
-        self.writeBytes([0xfe, 0x99, 
-                         sanitizeUint8(brightness)])
+        self._screen.setBrightness(brightness)
+
+    def incBrightness(self, increment):
+        self._screen.incBrightness(increment)
+
     def setContrast(self, contrast):
-        self._contrast = contrast
-        self.writeBytes([0xfe, 0x50,
-                         sanitizeUint8(contrast)])
+        self._screen.setContrast(contrast)
+
+    def incContrast(self, increment):
+        self._screen.incContrast(increment)
 
     # LEDs control
     def setGPOState(self, gpio, value):
@@ -105,7 +114,7 @@ class MatrixOrbital:
         self.writeBytes(command_list)
     def pollKeyPressed(self) :
         self.writeBytes([0xfe, 0x26])
-        return self.readBytes(self._serialDriver.in_waiting)
+        return self.readBytes(self._serialHandler.in_waiting)
     def clearKeyBuffer(self) :
         self.writeBytes([0xfe, 0x45])
     def setDebounceTime(self, time) :
@@ -113,35 +122,42 @@ class MatrixOrbital:
                          sanitizeUint8(time)])
 
     # text methods
-    def print(self, text, x0=None, y0=None, font_ref_id=None) :
-        if font_ref_id:
-            self.selectCurrentFont(font_ref_id)
-        if x0 != None and y0 != None:
-            self.setCursorMoveToPos(x0,y0)
-        self.writeBytes(bytes(text, 'UTF-8') if type(text) == str else text)
-    def setFontMetrics(self, leftMargin=0, topMargin=0, charSpacing=1, lineSpacing=1, lastYRow=64) :
-        self.writeBytes([0xfe, 0x32,
-                         sanitizeUint8(leftMargin),
-                         sanitizeUint8(topMargin),
-                         sanitizeUint8(charSpacing),
-                         sanitizeUint8(lineSpacing),
-                         sanitizeUint8(lastYRow)])
-    def selectCurrentFont(self, font_ref_id) :
-        self.writeBytes([0xfe, 0x31,
-                         sanitizeUint8(font_ref_id)])
-    def cursorMoveHome(self) : 
-        self.writeBytes([0xfe, 0x48])
-    def setCursorMoveToPos(self, col, row) :
-        self.writeBytes([0xfe, 0x47,
-                         sanitizeUint8(col),
-                         sanitizeUint8(row)])
+    def print(self,
+              text,
+              x0=None,
+              y0=None,
+              font_ref_id=None):
+        self._textControl.print(text,
+                                x0,
+                                y0,
+                                font_ref_id)
+
+    def setFontMetrics(self,
+                       leftMargin=0,
+                       topMargin=0,
+                       charSpacing=1,
+                       lineSpacing=1,
+                       lastYRow=64):
+        self._textControl.setFontMetrics(leftMargin,
+                                         topMargin,
+                                         charSpacing,
+                                         lineSpacing,
+                                         lastYRow) 
+     
+    def selectCurrentFont(self, font_ref_id):
+        self._textControl.selectCurrentFont(font_ref_id)
+
+    def cursorMoveHome(self): 
+        self._textControl.cursorMoveHome()
+
+    def setCursorMoveToPos(self, col, row):
+        self._textControl.setCursorMoveToPos(col, row)
+
     def setCursorCoordinate(self, x, y) :
-        self.writeBytes([0xfe, 0x79,
-                         sanitizeUint8(x),
-                         sanitizeUint8(y)]) 
+        self._textControl.setCursorCoordinate(x, y)
+
     def setAutoScroll(self, state) :
-        keyword = 0x51 if state else 0x52
-        self.writeBytes([0xfe, keyword])
+        self._textControl.setAutoScroll(state)
 
     # graphics methods
     def setDrawingColor(self, color):
