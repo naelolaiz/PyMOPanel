@@ -90,14 +90,13 @@ def fontBuffer2Dict(inputBuffer):
     chars = []
     for ch in range(myFont['ascii_start_value'], myFont['ascii_end_value']+1):
         thisTable = {}
-        offsetValue = inputBuffer[bufferIndex:bufferIndex+2]
+        offset = int.from_bytes(inputBuffer[bufferIndex:bufferIndex+2], byteorder='big')
         bufferIndex += 2
-        thisTable['offset'] = int.from_bytes(offsetValue, byteorder='big')
         thisTable['char_width'] = inputBuffer[bufferIndex]
         bufferIndex += 1
         bitsPerChar =int(myFont['height'] * thisTable['char_width'])
         bytesPerChar = ceil(bitsPerChar / 8.)
-        thisCharData = inputBuffer[thisTable['offset']:thisTable['offset']+bytesPerChar+1] 
+        thisCharData = inputBuffer[offset:offset+bytesPerChar+1] 
         chars += [ { 'char_table': thisTable, 'char_data': thisCharData } ]
     myFont['chars']  = chars
     return myFont
