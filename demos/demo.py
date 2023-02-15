@@ -2,22 +2,26 @@
 import time
 from math import pi, sin, cos 
 from threading import Thread 
-from sys import argv
 from random import random,randint
+from sys import argv, path
+path.append("..")
 
-from PyMOPanel import MatrixOrbital
+from PyMOPanel import PyMOPanel
+from PyMOPanel.constants import Constants
+from PyMOPanel.bar_graph import Direction
+from PyMOPanel.gpo import LedStatus
 
 class Demo:
     def demoThreadedLedChanges(self):
         while self._ledsDemoRunning:
             for led in range(3):
-                self._panel.setLedOff(led)
+                self._panel.setLed(led, LedStatus.OFF)
                 time.sleep(0.2)
-                self._panel.setLedYellow(led)
+                self._panel.setLed(led, LedStatus.YELLOW)
                 time.sleep(0.1)
-                self._panel.setLedRed(led)
+                self._panel.setLed(led, LedStatus.RED)
                 time.sleep(0.1)
-                self._panel.setLedGreen(led)
+                self._panel.setLed(led, LedStatus.GREEN)
                 time.sleep(0.1)
 
     def __init__(self, panel):
@@ -31,7 +35,7 @@ class Demo:
         while radius < maxRadius:
             x = int(centerPos[0] + cos(angle) * radius)
             y = int(centerPos[1] + sin(angle) * radius)
-            if x<0 or x>MatrixOrbital.Constants.PANEL_WIDTH or y <0 or y > MatrixOrbital.Constants.PANEL_HEIGHT:
+            if x<0 or x>Constants.PANEL_WIDTH or y <0 or y > Constants.PANEL_HEIGHT:
                 break
             self._panel.drawPixel(x,y)
             radius += incRadius
@@ -56,33 +60,32 @@ class Demo:
 
     def runDemoSpirals(self, spiralsCount):
         self._panel.clearScreen()
-        self.drawSpiral(200, [MatrixOrbital.Constants.CENTER_X, MatrixOrbital.Constants.CENTER_Y], MatrixOrbital.Constants.PANEL_HEIGHT)
+        self.drawSpiral(200, [Constants.CENTER_X, Constants.CENTER_Y], Constants.PANEL_HEIGHT)
         sign = 1
         for i in range(spiralsCount-1):
             offsetX = randint(-75,75)
             offsetY = randint(-20,20)
             self.drawSpiral(200, 
-                                   [MatrixOrbital.Constants.CENTER_X + offsetX, MatrixOrbital.Constants.CENTER_Y + offsetY],
-                                   randint(10,MatrixOrbital.Constants.PANEL_HEIGHT),
+                                   [Constants.CENTER_X + offsetX, Constants.CENTER_Y + offsetY],
+                                   randint(10,Constants.PANEL_HEIGHT),
                                    incAngle = sign * pi / randint(10,60),
                                    incRadius = 0.02 + 0.25 * random())
             sign = sign * -1
 
-    def runDemoBarGraphs(self):
+    def runDemoBarGraphs(self, changesCount, sleepTimeBetweenChange = 0.03):
         self._panel.clearScreen()
         time.sleep(0.2)
-        numberOfBars = MatrixOrbital.Constants.MAX_NUMBER_OF_BARS
-        deltaX = int(MatrixOrbital.Constants.PANEL_WIDTH / numberOfBars)
-        for i in range(0, MatrixOrbital.Constants.PANEL_WIDTH, deltaX):
-            index = self._panel.addBarGraph(i,          0,
-                                            i+deltaX-1, MatrixOrbital.Constants.PANEL_HEIGHT,
-                                            "VerticalBottom")
-
+        numberOfBars = Constants.MAX_NUMBER_OF_BARS
+        deltaX = int(Constants.PANEL_WIDTH / numberOfBars)
+        for i in range(0, Constants.PANEL_WIDTH, deltaX):
+            index = self._panel.addBarGraph(i, 0,
+                                            i+deltaX-1, Constants.PANEL_HEIGHT,
+                                            Direction(Direction.VERTICAL_BOTTOM_TO_TOP))
         scaler = 1/1.3
-        for i in range(400):
+        for i in range(changesCount):
             bar = randint(0,numberOfBars-1)
             self._panel.setBarGraphValue(bar, random()*scaler)
-            time.sleep(0.03)
+            time.sleep(sleepTimeBetweenChange)
 
     def runDemoLissajous(self, cycles):
         self._panel.clearScreen()
@@ -94,15 +97,15 @@ class Demo:
             incPhaseX = random()*pi/60
             incPhaseY = random()*pi/60
             for frame in range(1500):
-                x = MatrixOrbital.Constants.CENTER_X + int(MatrixOrbital.Constants.CENTER_X * cos(phaseX))
-                y = MatrixOrbital.Constants.CENTER_Y + int(MatrixOrbital.Constants.CENTER_Y * sin(phaseY))
+                x = Constants.CENTER_X + int(Constants.CENTER_X * cos(phaseX))
+                y = Constants.CENTER_Y + int(Constants.CENTER_Y * sin(phaseY))
                 self._panel.drawPixel(x,y)
                 phaseX += incPhaseX
                 phaseY += incPhaseY
                 time.sleep(0.003)
 
 def main(port):
-    myPanel = MatrixOrbital(port=port)
+    myPanel = PyMOPanel(port=port)
     demo = Demo(myPanel)
 
     # enable controlling brightness and contrast by the keyboard
@@ -123,12 +126,12 @@ def main(port):
 
     # stop leds blinking before the animation
     demo.stopLedsDemoThread()
-    myPanel.uploadAndShowBitmap('gif/resized_scissors.gif', x0=40)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_scissors.gif', x0=40)
     demo.startLedsDemoThread()
     time.sleep(1)
 
     # bar graphs
-    demo.runDemoBarGraphs()
+    demo.runDemoBarGraphs(350)
 
     time.sleep(1)
 
@@ -150,15 +153,15 @@ def main(port):
     demo.stopLedsDemoThread()
     myPanel.clearScreen()
     time.sleep(1)
-    myPanel.uploadAndShowBitmap('gif/resized_corridor.gif', x0=40)
-    myPanel.uploadAndShowBitmap('gif/resized_corridor.gif', x0=40, inverted=True)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_corridor.gif', x0=40)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_corridor.gif', x0=40, inverted=True)
     time.sleep(0.2)
-    myPanel.uploadAndShowBitmap('gif/resized_line.gif', x0=50, thresholdForBW=128)
-    myPanel.uploadAndShowBitmap('gif/resized_line.gif', x0=50)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_line.gif', x0=50, thresholdForBW=128)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_line.gif', x0=50)
     time.sleep(0.5)
 
     demo.startLedsDemoThread()
-    myPanel.uploadAndShowBitmap('bmp/goodbye.bmp')
+    myPanel.uploadAndShowBitmap('resources/bmp/goodbye.bmp')
     time.sleep(2)
     demo.stopLedsDemoThread()
 
@@ -166,7 +169,7 @@ def main(port):
     myPanel.setScreen(False)
     time.sleep(1)
     for i in range(3):
-        myPanel.setLedOff(i)
+        myPanel.setLed(i, LedStatus.OFF)
 
 if __name__ == '__main__':
     port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'
