@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from time import sleep
 from sys import argv
-from PyMOPanel import MatrixOrbital as Panel, filesystem as fs
+from PyMOPanel import PyMOPanel as Panel, filesystem as fs
 
 def main(port):
     myPanel = Panel(port=port)

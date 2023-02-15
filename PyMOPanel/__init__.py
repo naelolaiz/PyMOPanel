@@ -1,1 +1,1 @@
-from .MatrixOrbital import *
+from .PyMOPanel import *

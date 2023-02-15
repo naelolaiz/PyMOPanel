@@ -5,7 +5,7 @@ from threading import Thread
 from sys import argv
 from random import random,randint
 
-from PyMOPanel import MatrixOrbital
+from PyMOPanel import PyMOPanel
 from PyMOPanel.constants import Constants
 from PyMOPanel.bar_graph import Direction
 from PyMOPanel.gpo import LedStatus
@@ -104,7 +104,7 @@ class Demo:
                 time.sleep(0.003)
 
 def main(port):
-    myPanel = MatrixOrbital(port=port)
+    myPanel = PyMOPanel(port=port)
     demo = Demo(myPanel)
 
     # enable controlling brightness and contrast by the keyboard

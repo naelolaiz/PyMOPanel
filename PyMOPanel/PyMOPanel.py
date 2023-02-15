@@ -1,16 +1,13 @@
 import serial
-import time
 from threading import Lock 
-from .constants import *
-from .helpers import *
 from .keyboard import KeyboardManager
-from .bar_graph import *
+from .bar_graph import BarGraphManager
 from .screen import Screen
 from .text import Text
 from .graphics import Graphics
 from .gpo import LedStatus, GPO
 
-class MatrixOrbital:
+class PyMOPanel:
     def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
         self._port = port
         self._baudrate = baudrate

@@ -4,7 +4,6 @@ from math import ceil
 
 import numpy as np
 import pprint
-from .MatrixOrbital import *
 
 class FileType(Enum):
     FONT   = 0
