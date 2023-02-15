@@ -43,6 +43,7 @@ def main(port):
             myFont = Font.fromBuffer(fileContentBuffer)
             assert myFont.toBuffer() == fileContentBuffer
             assert Font.fromRawDataFile(outputFilename).toBuffer() == fileContentBuffer
+            assert myFont.toUnpackedNumpyArray() == fontUnpackedNumpyArray
 
             
 
