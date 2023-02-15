@@ -28,31 +28,6 @@ class Font:
     def getBufferSize(self):
         return self.getHeaderSize() + self.getCharTableSize() + self.getCharsCount()
 
-    def fromBuffer(self, inputBuffer):
-        bufferIndex = 0
-        self._nominal_width  = inputBuffer[bufferIndex]
-        bufferIndex += 1
-        self._height         = inputBuffer[bufferIndex]
-        bufferIndex += 1
-        self._ascii_range[0] = inputBuffer[bufferIndex]
-        bufferIndex += 1
-        self._ascii_range[1] = inputBuffer[bufferIndex]
-        bufferIndex += 1
-        self._chars = []
-        for ch in range(self._ascii_range[0], self._ascii_range[1]+1):
-            offset = int.from_bytes(inputBuffer[bufferIndex:bufferIndex+2], byteorder='big')
-            bufferIndex += 2
-            char_width = inputBuffer[bufferIndex]
-            bufferIndex += 1
-            bitsPerChar =int(self._height * char_width)
-            bytesPerChar = ceil(bitsPerChar / 8.)
-            thisCharData = inputBuffer[offset:offset+bytesPerChar] 
-            self._chars += [ self.Char(char_width, thisCharData) ]
-        return self
-
-    def fromRawDataFile(self, inputFilename):
-        buffer = open(inputFilename, 'rb').read()
-        return self.fromBuffer(buffer)
 
     def toBuffer(self):
         outputBuffer = bytearray(self.getBufferSize())
@@ -90,3 +65,30 @@ class Font:
             rawBitsIncludingZeroPadding = np.unpackbits(np.frombuffer(char._data, dtype=np.uint8), axis=0)
             myChars[chr(self._ascii_range[0] + i)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1, char._width)
         return pprint.pformat(myChars)
+
+    def fromBuffer(inputBuffer):
+        font = Font()
+        bufferIndex = 0
+        font._nominal_width  = inputBuffer[bufferIndex]
+        bufferIndex += 1
+        font._height         = inputBuffer[bufferIndex]
+        bufferIndex += 1
+        font._ascii_range[0] = inputBuffer[bufferIndex]
+        bufferIndex += 1
+        font._ascii_range[1] = inputBuffer[bufferIndex]
+        bufferIndex += 1
+        font._chars = []
+        for ch in range(font._ascii_range[0], font._ascii_range[1]+1):
+            offset = int.from_bytes(inputBuffer[bufferIndex:bufferIndex+2], byteorder='big')
+            bufferIndex += 2
+            char_width = inputBuffer[bufferIndex]
+            bufferIndex += 1
+            bitsPerChar =int(font._height * char_width)
+            bytesPerChar = ceil(bitsPerChar / 8.)
+            thisCharData = inputBuffer[offset:offset+bytesPerChar] 
+            font._chars += [ font.Char(char_width, thisCharData) ]
+        return font
+
+    def fromRawDataFile(inputFilename):
+        buffer = open(inputFilename, 'rb').read()
+        return Font.fromBuffer(buffer)

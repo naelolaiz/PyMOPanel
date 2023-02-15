@@ -40,9 +40,9 @@ def main(port):
                 open('{}.np'.format(outputFilename), 'w').write(fontUnpackedNumpyArray)
 
             ### testing font implementation fromBuffer 
-            myFont = Font().fromBuffer(fileContentBuffer)
+            myFont = Font.fromBuffer(fileContentBuffer)
             assert myFont.toBuffer() == fileContentBuffer
-            assert Font().fromRawDataFile(outputFilename).toBuffer() == fileContentBuffer
+            assert Font.fromRawDataFile(outputFilename).toBuffer() == fileContentBuffer
 
             
 
