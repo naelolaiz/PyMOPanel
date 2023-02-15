@@ -52,8 +52,6 @@ def download(panel, fileType, fileId, outputFilename = None):
         return
     buffer = panel.readBytes(fileSizeInBytes)
     panel.setAutoTransmitKeyPressed(True)
-    #if fileType == FileType.FONT:
-    #    print(str(fontDictToUnpackedNumpyArray(fontBuffer2Dict((buffer)))))
     if outputFilename:
         print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
         open(outputFilename, 'wb').write(buffer)
@@ -96,7 +94,7 @@ def fontBuffer2Dict(inputBuffer):
         bufferIndex += 1
         bitsPerChar =int(myFont['height'] * char_width)
         bytesPerChar = ceil(bitsPerChar / 8.)
-        thisCharData = inputBuffer[offset:offset+bytesPerChar+1] 
+        thisCharData = inputBuffer[offset:offset+bytesPerChar] 
         chars += [ { 'char_width': char_width, 'char_data': thisCharData } ]
     myFont['chars']  = chars
     return myFont

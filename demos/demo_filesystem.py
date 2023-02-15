@@ -4,6 +4,8 @@ from sys import argv, path
 import pprint
 path.append("..")
 from PyMOPanel import PyMOPanel as Panel, filesystem as fs
+from PyMOPanel.font import *
+
 
 def main(port):
     myPanel = Panel(port=port)
@@ -37,6 +39,12 @@ def main(port):
             if fontUnpackedNumpyArray:
                 open('{}.np'.format(outputFilename), 'w').write(fontUnpackedNumpyArray)
 
+            ### testing font implementation fromBuffer 
+            myFont = Font().fromBuffer(fileContentBuffer)
+            assert myFont.toBuffer() == fileContentBuffer
+            assert Font().fromRawDataFile(outputFilename).toBuffer() == fileContentBuffer
+
+            
 
 if __name__ == '__main__':
     port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'
