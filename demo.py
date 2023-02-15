@@ -8,18 +8,19 @@ from random import random,randint
 from PyMOPanel import MatrixOrbital
 from PyMOPanel.constants import Constants
 from PyMOPanel.bar_graph import Direction
+from PyMOPanel.gpo import LedStatus
 
 class Demo:
     def demoThreadedLedChanges(self):
         while self._ledsDemoRunning:
             for led in range(3):
-                self._panel.setLedOff(led)
+                self._panel.setLed(led, LedStatus.OFF)
                 time.sleep(0.2)
-                self._panel.setLedYellow(led)
+                self._panel.setLed(led, LedStatus.YELLOW)
                 time.sleep(0.1)
-                self._panel.setLedRed(led)
+                self._panel.setLed(led, LedStatus.RED)
                 time.sleep(0.1)
-                self._panel.setLedGreen(led)
+                self._panel.setLed(led, LedStatus.GREEN)
                 time.sleep(0.1)
 
     def __init__(self, panel):
@@ -167,7 +168,7 @@ def main(port):
     myPanel.setScreen(False)
     time.sleep(1)
     for i in range(3):
-        myPanel.setLedOff(i)
+        myPanel.setLed(i, LedStatus.OFF)
 
 if __name__ == '__main__':
     port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'

@@ -8,6 +8,7 @@ from .bar_graph import *
 from .screen import Screen
 from .text import Text
 from .graphics import Graphics
+from .gpo import LedStatus, GPO
 
 class MatrixOrbital:
     def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
@@ -28,6 +29,7 @@ class MatrixOrbital:
                             lineSpacing = 1,
                             lastYRow    = 64)
         self._graphics = Graphics(self)
+        self._leds     = GPO(self)
         self._keyboard = KeyboardManager(self, self._serialHandler)
         self._barGraph = BarGraphManager(self)
         
@@ -82,21 +84,8 @@ class MatrixOrbital:
         self._screen.incContrast(increment)
 
     # LEDs control
-    def setGPOState(self, gpio, value):
-        self.writeBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
-    def setLedState(self, led, state):
-        gpoMsb = 2 if led == 0 else 4 if led == 1 else 6
-        gpoLsb = 1 if led == 0 else 3 if led == 1 else 5
-        self.setGPOState(gpoMsb, state[0])
-        self.setGPOState(gpoLsb, state[1])
-    def setLedYellow(self, led):
-        self.setLedState(led, [0, 0])
-    def setLedGreen(self, led):
-        self.setLedState(led, [0,1])
-    def setLedRed(self, led):
-        self.setLedState(led, [1, 0])
-    def setLedOff(self, led):
-        self.setLedState(led, [1,1])
+    def setLed(self, led, state):
+        self._leds.setLed(led, state)
 
     # keypad methods
     def setAutoTransmitKeyPressed(self, state) :
