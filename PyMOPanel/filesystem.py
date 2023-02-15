@@ -52,40 +52,9 @@ def download(panel, fileType, fileId, outputFilename):
         return
     buffer = panel.readBytes(fileSizeInBytes)
     panel.setAutoTransmitKeyPressed(True)
-    bufferIndex = 0
-    header = {}
-    header['fileSizeIncludingHeader'] = fileSizeInBytes
-    header['width'] = buffer[bufferIndex]
-    bufferIndex += 1
-    header['height'] = buffer[bufferIndex]
-    bufferIndex += 1
     if fileType == FileType.FONT:
-        header['ascii_start_value'] = buffer[bufferIndex]
-        bufferIndex += 1
-        header['ascii_end_value'] = buffer[bufferIndex]
-        bufferIndex += 1
-        charTable = []
-        charData = []
-        myChars = {}
-        for ch in range(header['ascii_start_value'], header['ascii_end_value']+1):
-            thisTable = {}
-            offsetValue = buffer[bufferIndex:bufferIndex+2]
-            bufferIndex += 2
-            thisTable['offset'] = int.from_bytes(offsetValue, byteorder='big')
-            thisTable['char_width'] = buffer[bufferIndex]
-            bufferIndex += 1
-            bitsPerChar =int(header['height'] * thisTable['char_width'])
-            bytesPerChar = ceil(bitsPerChar / 8.)
-            thisCharData = buffer[thisTable['offset']:thisTable['offset']+bytesPerChar+1] 
-            # decode char
-            rawBitsIncludingZeroPadding=np.unpackbits(np.frombuffer(thisCharData, dtype=np.uint8), axis=0)
-            myChars[chr(ch)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1,thisTable['char_width'])
-            charData += [thisCharData]
-            charTable += [thisTable]
-        header['charTable'] = charTable
-        header['charData'] = charData
-        with open(outputFilename+'.chars', 'w') as charsFile:
-            charsFile.write(pprint.pformat(myChars))
+        print(str(fontDictToUnpackedNumpyArray(fontBuffer2Dict((buffer)))))
+
     print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
     open(outputFilename+'.info', 'w').write("{}\n".format(str(header)))
     open(outputFilename, 'wb').write(buffer)
@@ -103,3 +72,45 @@ def dumpAll(panel, outputFilename):
     open(outputFilename, 'wb').write(panel.readBytes(filesystemSize))
     panel.setAutoTransmitKeyPressed(True)
     print('done!')
+
+# file formats helpers
+def fontBuffer2Dict(inputBuffer):
+    bufferIndex = 0
+    myFont = {}
+    myFont['fileSizeIncludingHeader'] = len(inputBuffer)
+    myFont['nominal_width'] = inputBuffer[bufferIndex]
+    bufferIndex += 1
+    myFont['height'] = inputBuffer[bufferIndex]
+    bufferIndex += 1
+    myFont['ascii_start_value'] = inputBuffer[bufferIndex]
+    bufferIndex += 1
+    myFont['ascii_end_value'] = inputBuffer[bufferIndex]
+    bufferIndex += 1
+    chars = []
+    for ch in range(myFont['ascii_start_value'], myFont['ascii_end_value']+1):
+        thisTable = {}
+        offsetValue = inputBuffer[bufferIndex:bufferIndex+2]
+        bufferIndex += 2
+        thisTable['offset'] = int.from_bytes(offsetValue, byteorder='big')
+        thisTable['char_width'] = inputBuffer[bufferIndex]
+        bufferIndex += 1
+        bitsPerChar =int(myFont['height'] * thisTable['char_width'])
+        bytesPerChar = ceil(bitsPerChar / 8.)
+        thisCharData = inputBuffer[thisTable['offset']:thisTable['offset']+bytesPerChar+1] 
+        chars += [ { 'char_table': thisTable, 'char_data': thisCharData } ]
+    myFont['chars']  = chars
+    return myFont
+
+def fontDictToUnpackedNumpyArray(inputDict):
+    myChars = {}
+    height = inputDict['height']
+    for i,char in enumerate(inputDict['chars']):
+        char_width = char['char_table']['char_width']
+        bitsPerChar =int(height * char_width)
+        # decode char
+        rawBitsIncludingZeroPadding = np.unpackbits(np.frombuffer(char['char_data'], dtype=np.uint8), axis=0)
+        myChars[chr(inputDict['ascii_start_value'] + i)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1, char_width)
+
+    #with open(outputFilename+'.chars', 'w') as charsFile:
+    #    charsFile.write(pprint.pformat(myChars))
+    return pprint.pformat(myChars)
