@@ -56,18 +56,24 @@ class Font:
         return bytes(outputBuffer)
         
     def toDictOfUnpackedNumpyArray(self):
-        myChars = {}
+        myChars = { 'nominal_width': self._nominal_width,
+                    'height': self._height,
+                    'ascii_start_value': self._ascii_range[0],
+                    'ascii_end_value': self._ascii_range[1],
+                    'chars': {}
+                    }
+
         for i,char in enumerate(self._chars):
             if not char._width: 
                 return
             bitsPerChar =int(self._height * char._width)
             # decode char
             rawBitsIncludingZeroPadding = np.unpackbits(np.frombuffer(char._data, dtype=np.uint8), axis=0)
-            myChars[chr(self._ascii_range[0] + i)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1, char._width)
+            myChars['chars'][chr(self._ascii_range[0] + i)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1, char._width)
         return myChars
 
     def saveDictOfUnpackedNumpyArray(self, outputFilename):
-        open(outputFilename, 'w').write(pprint.pformat(self.toDictOfUnpackedNumpyArray()))
+        open(outputFilename, 'w').write(pprint.pformat(self.toDictOfUnpackedNumpyArray()).replace(" array", "\narray"))
 
     def fromBuffer(inputBuffer):
         font = Font()
@@ -91,6 +97,9 @@ class Font:
             thisCharData = inputBuffer[offset:offset+bytesPerChar] 
             font._chars += [ font.Char(char_width, thisCharData) ]
         return font
+
+    def fromDictOfUnpackedNumpyArray(self, dictOfNpArrays):
+        self._nominal_width
 
     def fromRawDataFile(inputFilename):
         buffer = open(inputFilename, 'rb').read()
