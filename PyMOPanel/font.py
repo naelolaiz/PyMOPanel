@@ -55,7 +55,7 @@ class Font:
             char_data_offset += data_size
         return bytes(outputBuffer)
         
-    def toUnpackedNumpyArray(self):
+    def toDictOfUnpackedNumpyArray(self):
         myChars = {}
         for i,char in enumerate(self._chars):
             if not char._width: 
@@ -64,7 +64,10 @@ class Font:
             # decode char
             rawBitsIncludingZeroPadding = np.unpackbits(np.frombuffer(char._data, dtype=np.uint8), axis=0)
             myChars[chr(self._ascii_range[0] + i)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1, char._width)
-        return pprint.pformat(myChars)
+        return myChars
+
+    def saveDictOfUnpackedNumpyArray(self, outputFilename):
+        open(outputFilename, 'w').write(pprint.pformat(self.toDictOfUnpackedNumpyArray()))
 
     def fromBuffer(inputBuffer):
         font = Font()

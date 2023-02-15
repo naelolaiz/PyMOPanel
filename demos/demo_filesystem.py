@@ -30,10 +30,10 @@ def main(port):
         print("Downloading {} with size {}.".format(outputFilename, file_size))
         fileContentBuffer = fs.download(myPanel, file_type, file_index, outputFilename)
         if fileContentBuffer and file_type == fs.FileType.FONT: 
-            # write the data in a file with numpy array
-            open('{}.np'.format(outputFilename), 'w').write(Font.fromBuffer(fileContentBuffer).toUnpackedNumpyArray())
-            ### testing font implementation fromBuffer 
+            # testing roundtrip conversion
             assert Font.fromRawDataFile(outputFilename).toBuffer() == fileContentBuffer
+            # write the data in a file with numpy array
+            Font.fromBuffer(fileContentBuffer).saveDictOfUnpackedNumpyArray("{}.npArrayDict".format(outputFilename))
 
             
 
