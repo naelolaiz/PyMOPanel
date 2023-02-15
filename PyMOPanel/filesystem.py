@@ -14,7 +14,7 @@ def getFreeSpaceInBytes(panel):
     panel.writeBytes([0xfe, 0xaf])
     return int.from_bytes(panel.readBytes(4), byteorder='little', signed=False)
 
-def getDirectory(panel):
+def ls(panel):
     panel.setAutoTransmitKeyPressed(False)
     panel.resetInputState()
     panel.writeBytes([0xfe, 0xb3])
@@ -35,11 +35,13 @@ def getDirectory(panel):
         fileType = FileType(typeAndFileId & 1)
         fileId = typeAndFileId >> 1
         fileSize = int.from_bytes(buffer[offset:offset+2], byteorder='little', signed=False)
-        offset += 2 
-        entries += [(fileType, fileId, fileSize)]
+        offset += 2
+        entries += [{'file_type' : fileType, 
+                     'file_index': fileId,
+                     'file_size' : fileSize}]
     return entries
     
-def download(panel, fileType, fileId, outputFilename):
+def download(panel, fileType, fileId, outputFilename = None):
     panel.setAutoTransmitKeyPressed(False)
     panel.resetInputState()
     panel.writeBytes([0xfe, 0xb2, fileType.value, fileId])
@@ -50,44 +52,14 @@ def download(panel, fileType, fileId, outputFilename):
         return
     buffer = panel.readBytes(fileSizeInBytes)
     panel.setAutoTransmitKeyPressed(True)
-    bufferIndex = 0
-    header = {}
-    header['fileSizeIncludingHeader'] = fileSizeInBytes
-    header['width'] = buffer[bufferIndex]
-    bufferIndex += 1
-    header['height'] = buffer[bufferIndex]
-    bufferIndex += 1
-    if fileType == FileType.FONT:
-        header['ascii_start_value'] = buffer[bufferIndex]
-        bufferIndex += 1
-        header['ascii_end_value'] = buffer[bufferIndex]
-        bufferIndex += 1
-        charTable = []
-        charData = []
-        myChars = {}
-        for ch in range(header['ascii_start_value'], header['ascii_end_value']+1):
-            thisTable = {}
-            offsetValue = buffer[bufferIndex:bufferIndex+2]
-            bufferIndex += 2
-            thisTable['offset'] = int.from_bytes(offsetValue, byteorder='big')
-            thisTable['char_width'] = buffer[bufferIndex]
-            bufferIndex += 1
-            bitsPerChar =int(header['height'] * thisTable['char_width'])
-            bytesPerChar = ceil(bitsPerChar / 8.)
-            thisCharData = buffer[thisTable['offset']:thisTable['offset']+bytesPerChar+1] 
-            # decode char
-            rawBitsIncludingZeroPadding=np.unpackbits(np.frombuffer(thisCharData, dtype=np.uint8), axis=0)
-            myChars[chr(ch)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1,thisTable['char_width'])
-            charData += [thisCharData]
-            charTable += [thisTable]
-        header['charTable'] = charTable
-        header['charData'] = charData
-        with open(outputFilename+'.chars', 'w') as charsFile:
-            charsFile.write(pprint.pformat(myChars))
-    print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
-    open(outputFilename+'.info', 'w').write("{}\n".format(str(header)))
-    open(outputFilename, 'wb').write(buffer)
-    print('done!')
+    #if fileType == FileType.FONT:
+    #    print(str(fontDictToUnpackedNumpyArray(fontBuffer2Dict((buffer)))))
+    if outputFilename:
+        print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
+        open(outputFilename, 'wb').write(buffer)
+        print('done!')
+    return buffer
+
 def upload(panel, inputFilename, fileType, fileId):
     # TODO. Font: [0xfe, 0x24, refId, size, data] ; bitmap: [0xfe, 0x54, refId, size, data]
     return 
@@ -101,3 +73,45 @@ def dumpAll(panel, outputFilename):
     open(outputFilename, 'wb').write(panel.readBytes(filesystemSize))
     panel.setAutoTransmitKeyPressed(True)
     print('done!')
+
+# file formats helpers
+def fontBuffer2Dict(inputBuffer):
+    bufferIndex = 0
+    myFont = {}
+    myFont['fileSizeIncludingHeader'] = len(inputBuffer)
+    myFont['nominal_width'] = inputBuffer[bufferIndex]
+    bufferIndex += 1
+    myFont['height'] = inputBuffer[bufferIndex]
+    bufferIndex += 1
+    myFont['ascii_start_value'] = inputBuffer[bufferIndex]
+    bufferIndex += 1
+    myFont['ascii_end_value'] = inputBuffer[bufferIndex]
+    bufferIndex += 1
+    chars = []
+    for ch in range(myFont['ascii_start_value'], myFont['ascii_end_value']+1):
+        thisTable = {}
+        offset = int.from_bytes(inputBuffer[bufferIndex:bufferIndex+2], byteorder='big')
+        bufferIndex += 2
+        char_width = inputBuffer[bufferIndex]
+        bufferIndex += 1
+        bitsPerChar =int(myFont['height'] * char_width)
+        bytesPerChar = ceil(bitsPerChar / 8.)
+        thisCharData = inputBuffer[offset:offset+bytesPerChar+1] 
+        chars += [ { 'char_width': char_width, 'char_data': thisCharData } ]
+    myFont['chars']  = chars
+    return myFont
+
+def fontDict2UnpackedNumpyArray(inputDict):
+    myChars = {}
+    height = inputDict['height']
+    if not height:
+        return
+    for i,char in enumerate(inputDict['chars']):
+        char_width = char['char_width']
+        if not char_width: 
+            return
+        bitsPerChar =int(height * char_width)
+        # decode char
+        rawBitsIncludingZeroPadding = np.unpackbits(np.frombuffer(char['char_data'], dtype=np.uint8), axis=0)
+        myChars[chr(inputDict['ascii_start_value'] + i)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1, char_width)
+    return pprint.pformat(myChars)
