@@ -41,7 +41,7 @@ def ls(panel):
                      'file_size' : fileSize}]
     return entries
     
-def download(panel, fileType, fileId, outputFilename):
+def download(panel, fileType, fileId, outputFilename = None):
     panel.setAutoTransmitKeyPressed(False)
     panel.resetInputState()
     panel.writeBytes([0xfe, 0xb2, fileType.value, fileId])
@@ -52,13 +52,14 @@ def download(panel, fileType, fileId, outputFilename):
         return
     buffer = panel.readBytes(fileSizeInBytes)
     panel.setAutoTransmitKeyPressed(True)
-    if fileType == FileType.FONT:
-        print(str(fontDictToUnpackedNumpyArray(fontBuffer2Dict((buffer)))))
+    #if fileType == FileType.FONT:
+    #    print(str(fontDictToUnpackedNumpyArray(fontBuffer2Dict((buffer)))))
+    if outputFilename:
+        print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
+        open(outputFilename, 'wb').write(buffer)
+        print('done!')
+    return buffer
 
-    print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
-    open(outputFilename+'.info', 'w').write("{}\n".format(str(header)))
-    open(outputFilename, 'wb').write(buffer)
-    print('done!')
 def upload(panel, inputFilename, fileType, fileId):
     # TODO. Font: [0xfe, 0x24, refId, size, data] ; bitmap: [0xfe, 0x54, refId, size, data]
     return 
@@ -101,16 +102,17 @@ def fontBuffer2Dict(inputBuffer):
     myFont['chars']  = chars
     return myFont
 
-def fontDictToUnpackedNumpyArray(inputDict):
+def fontDict2UnpackedNumpyArray(inputDict):
     myChars = {}
     height = inputDict['height']
+    if not height:
+        return
     for i,char in enumerate(inputDict['chars']):
         char_width = char['char_table']['char_width']
+        if not char_width: 
+            return
         bitsPerChar =int(height * char_width)
         # decode char
         rawBitsIncludingZeroPadding = np.unpackbits(np.frombuffer(char['char_data'], dtype=np.uint8), axis=0)
         myChars[chr(inputDict['ascii_start_value'] + i)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1, char_width)
-
-    #with open(outputFilename+'.chars', 'w') as charsFile:
-    #    charsFile.write(pprint.pformat(myChars))
     return pprint.pformat(myChars)
