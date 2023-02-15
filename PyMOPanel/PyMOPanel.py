@@ -105,15 +105,11 @@ class PyMOPanel:
         self._text.print(text, x0, y0, font_ref_id)
 
     def setFontMetrics(self,
-                       leftMargin=0,
-                       topMargin=0,
-                       charSpacing=1,
-                       lineSpacing=1,
+                       leftMargin  = 0, topMargin   = 0,
+                       charSpacing = 1, lineSpacing = 1,
                        lastYRow=64):
-        self._text.setFontMetrics(leftMargin,
-                                  topMargin,
-                                  charSpacing,
-                                  lineSpacing,
+        self._text.setFontMetrics(leftMargin,  topMargin,
+                                  charSpacing, lineSpacing,
                                   lastYRow) 
      
     def selectCurrentFont(self, font_ref_id):
