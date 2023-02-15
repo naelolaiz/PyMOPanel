@@ -1,9 +1,4 @@
-from PIL import Image
 from enum import Enum
-from math import ceil
-
-import numpy as np
-import pprint
 
 class FileType(Enum):
     FONT   = 0
@@ -72,44 +67,3 @@ def dumpAll(panel, outputFilename):
     panel.setAutoTransmitKeyPressed(True)
     print('done!')
 
-# file formats helpers
-def fontBuffer2Dict(inputBuffer):
-    bufferIndex = 0
-    myFont = {}
-    myFont['fileSizeIncludingHeader'] = len(inputBuffer)
-    myFont['nominal_width'] = inputBuffer[bufferIndex]
-    bufferIndex += 1
-    myFont['height'] = inputBuffer[bufferIndex]
-    bufferIndex += 1
-    myFont['ascii_start_value'] = inputBuffer[bufferIndex]
-    bufferIndex += 1
-    myFont['ascii_end_value'] = inputBuffer[bufferIndex]
-    bufferIndex += 1
-    chars = []
-    for ch in range(myFont['ascii_start_value'], myFont['ascii_end_value']+1):
-        thisTable = {}
-        offset = int.from_bytes(inputBuffer[bufferIndex:bufferIndex+2], byteorder='big')
-        bufferIndex += 2
-        char_width = inputBuffer[bufferIndex]
-        bufferIndex += 1
-        bitsPerChar =int(myFont['height'] * char_width)
-        bytesPerChar = ceil(bitsPerChar / 8.)
-        thisCharData = inputBuffer[offset:offset+bytesPerChar] 
-        chars += [ { 'char_width': char_width, 'char_data': thisCharData } ]
-    myFont['chars']  = chars
-    return myFont
-
-def fontDict2UnpackedNumpyArray(inputDict):
-    myChars = {}
-    height = inputDict['height']
-    if not height:
-        return
-    for i,char in enumerate(inputDict['chars']):
-        char_width = char['char_width']
-        if not char_width: 
-            return
-        bitsPerChar =int(height * char_width)
-        # decode char
-        rawBitsIncludingZeroPadding = np.unpackbits(np.frombuffer(char['char_data'], dtype=np.uint8), axis=0)
-        myChars[chr(inputDict['ascii_start_value'] + i)] = rawBitsIncludingZeroPadding[:bitsPerChar].reshape(-1, char_width)
-    return pprint.pformat(myChars)
