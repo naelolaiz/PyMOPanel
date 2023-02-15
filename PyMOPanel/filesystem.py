@@ -14,7 +14,7 @@ def getFreeSpaceInBytes(panel):
     panel.writeBytes([0xfe, 0xaf])
     return int.from_bytes(panel.readBytes(4), byteorder='little', signed=False)
 
-def getDirectory(panel):
+def ls(panel):
     panel.setAutoTransmitKeyPressed(False)
     panel.resetInputState()
     panel.writeBytes([0xfe, 0xb3])
@@ -35,8 +35,10 @@ def getDirectory(panel):
         fileType = FileType(typeAndFileId & 1)
         fileId = typeAndFileId >> 1
         fileSize = int.from_bytes(buffer[offset:offset+2], byteorder='little', signed=False)
-        offset += 2 
-        entries += [(fileType, fileId, fileSize)]
+        offset += 2
+        entries += [{'file_type' : fileType, 
+                     'file_index': fileId,
+                     'file_size' : fileSize}]
     return entries
     
 def download(panel, fileType, fileId, outputFilename):
