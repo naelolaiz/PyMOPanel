@@ -34,7 +34,14 @@ def main(port):
             assert Font.fromRawDataFile(outputFilename).toBuffer() == fileContentBuffer
             # write the data in a file with numpy array
             Font.fromBuffer(fileContentBuffer).saveDictOfUnpackedNumpyArray("{}.npArrayDict".format(outputFilename))
+              
 
+            myDict = Font.fromBuffer(fileContentBuffer).toDictOfUnpackedNumpyArray()
+            #assert myDict == Font.fromDictOfUnpackedNumpyArray(myDict).toDictOfUnpackedNumpyArray()
+            #open("a", "wb").write(Font.fromDictOfUnpackedNumpyArray(myDict).toBuffer())
+            #open("b", "wb").write(fileContentBuffer)
+            # this comparison fails on the padded bits. Is my FS corrupted? (the padded bits are read as 1, but regenerated as 0)
+            #assert Font.fromDictOfUnpackedNumpyArray(myDict).toBuffer() == fileContentBuffer
             
 
 if __name__ == '__main__':

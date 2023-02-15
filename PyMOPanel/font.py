@@ -46,6 +46,7 @@ class Font:
         char_table_offset = bufferIndex
         char_data_offset  = bufferIndex + self.getCharTableSize()
         for char in self._chars:
+            print("toBuffer {} ; {} :".format(char_table_offset, char_data_offset))
             outputBuffer[char_table_offset:char_table_offset+2] = int(char_data_offset).to_bytes(length=2, byteorder='big')
             char_table_offset += 2
             outputBuffer[char_table_offset] = char._width
@@ -89,6 +90,7 @@ class Font:
         font._chars = []
         for ch in range(font._ascii_range[0], font._ascii_range[1]+1):
             offset = int.from_bytes(inputBuffer[bufferIndex:bufferIndex+2], byteorder='big')
+            print("fromBuffer {} ; {} :".format(bufferIndex, offset))
             bufferIndex += 2
             char_width = inputBuffer[bufferIndex]
             bufferIndex += 1
@@ -98,9 +100,16 @@ class Font:
             font._chars += [ font.Char(char_width, thisCharData) ]
         return font
 
-    def fromDictOfUnpackedNumpyArray(self, dictOfNpArrays):
-        self._nominal_width
-
+    def fromDictOfUnpackedNumpyArray(dictOfNpArrays):
+        font = Font()
+        font._nominal_width = dictOfNpArrays['nominal_width']
+        font._height = dictOfNpArrays['height']
+        font._ascii_range = [dictOfNpArrays['ascii_start_value'], dictOfNpArrays['ascii_end_value']]
+        font._chars = []
+        for npChar in dictOfNpArrays['chars'].values():
+           font._chars += [ font.Char(npChar.shape[1], bytes(np.packbits(npChar))) ]
+        return font
+            
     def fromRawDataFile(inputFilename):
         buffer = open(inputFilename, 'rb').read()
         return Font.fromBuffer(buffer)
