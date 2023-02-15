@@ -92,12 +92,12 @@ def fontBuffer2Dict(inputBuffer):
         thisTable = {}
         offset = int.from_bytes(inputBuffer[bufferIndex:bufferIndex+2], byteorder='big')
         bufferIndex += 2
-        thisTable['char_width'] = inputBuffer[bufferIndex]
+        char_width = inputBuffer[bufferIndex]
         bufferIndex += 1
-        bitsPerChar =int(myFont['height'] * thisTable['char_width'])
+        bitsPerChar =int(myFont['height'] * char_width)
         bytesPerChar = ceil(bitsPerChar / 8.)
         thisCharData = inputBuffer[offset:offset+bytesPerChar+1] 
-        chars += [ { 'char_table': thisTable, 'char_data': thisCharData } ]
+        chars += [ { 'char_width': char_width, 'char_data': thisCharData } ]
     myFont['chars']  = chars
     return myFont
 
@@ -107,7 +107,7 @@ def fontDict2UnpackedNumpyArray(inputDict):
     if not height:
         return
     for i,char in enumerate(inputDict['chars']):
-        char_width = char['char_table']['char_width']
+        char_width = char['char_width']
         if not char_width: 
             return
         bitsPerChar =int(height * char_width)
