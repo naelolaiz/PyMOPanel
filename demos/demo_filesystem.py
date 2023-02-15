@@ -26,9 +26,9 @@ def main(port):
             continue
         outputFilename = '{}_{}.data'.format(file_type.name, str(file_index))
         print("Downloading {} with size {}.".format(outputFilename, file_size))
-        fontBuffer = fs.download(myPanel, file_type, file_index, outputFilename)
-        if fontBuffer: 
-            fontDict   = fs.fontBuffer2Dict(fontBuffer)
+        fileContentBuffer = fs.download(myPanel, file_type, file_index, outputFilename)
+        if fileContentBuffer and file_type == fs.FileType.FONT: 
+            fontDict   = fs.fontBuffer2Dict(fileContentBuffer)
             fontUnpackedNumpyArray = fs.fontDict2UnpackedNumpyArray(fontDict) 
             open('{}.dict'.format(outputFilename), 'w').write(pprint.pformat(fontDict))
             if fontUnpackedNumpyArray:
