@@ -3,7 +3,7 @@ import time
 from threading import Lock 
 from .constants import *
 from .helpers import *
-from .threaded_keyboard_manager import KeyboardManager
+from .keyboard import KeyboardManager
 from .bar_graph import *
 from .screen import Screen
 from .text import Text
@@ -100,26 +100,19 @@ class MatrixOrbital:
 
     # keypad methods
     def setAutoTransmitKeyPressed(self, state) :
-        keyword = 0x41 if state else 0x4f
-        self.writeBytes([0xfe,keyword])
-    def setAutoRepeatKeyModeResend(self, state) :
-        command_list = [0xfe, 0x60] # autorepeat off
-        if state:
-            command_list = [0xfe, 0x7e, 0x00]
-        self.writeBytes(command_list)
-    def setAutoRepeatKeyModeUpDown(self, state) :
-        command_list = [0xfe, 0x60] # autorepeat off
-        if state:
-            command_list = [0xfe, 0x7e, 0x01]
-        self.writeBytes(command_list)
+        self._keyboard.setAutoTransmitKeyPressed(state)
+
+    def setAutoRepeatKeyMode(self, mode):
+        self._keyboard.setAutoRepeatKeyMode(mode)
+
     def pollKeyPressed(self) :
-        self.writeBytes([0xfe, 0x26])
-        return self.readBytes(self._serialHandler.in_waiting)
+        return self._keyboard.pollKeyPressed()
+
     def clearKeyBuffer(self) :
-        self.writeBytes([0xfe, 0x45])
+        return self._keyboard.clearKeyBuffer()
+
     def setDebounceTime(self, time) :
-        self.writeBytes([0xfe, 0x55,
-                         sanitizeUint8(time)])
+        return self._keyboard.setDebounceTime(time)
 
     # text methods
     def print(self, text, x0=None, y0=None, font_ref_id=None):
