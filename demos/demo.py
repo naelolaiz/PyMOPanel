@@ -2,8 +2,9 @@
 import time
 from math import pi, sin, cos 
 from threading import Thread 
-from sys import argv
 from random import random,randint
+from sys import argv, path
+path.append("..")
 
 from PyMOPanel import PyMOPanel
 from PyMOPanel.constants import Constants
@@ -125,7 +126,7 @@ def main(port):
 
     # stop leds blinking before the animation
     demo.stopLedsDemoThread()
-    myPanel.uploadAndShowBitmap('gif/resized_scissors.gif', x0=40)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_scissors.gif', x0=40)
     demo.startLedsDemoThread()
     time.sleep(1)
 
@@ -152,15 +153,15 @@ def main(port):
     demo.stopLedsDemoThread()
     myPanel.clearScreen()
     time.sleep(1)
-    myPanel.uploadAndShowBitmap('gif/resized_corridor.gif', x0=40)
-    myPanel.uploadAndShowBitmap('gif/resized_corridor.gif', x0=40, inverted=True)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_corridor.gif', x0=40)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_corridor.gif', x0=40, inverted=True)
     time.sleep(0.2)
-    myPanel.uploadAndShowBitmap('gif/resized_line.gif', x0=50, thresholdForBW=128)
-    myPanel.uploadAndShowBitmap('gif/resized_line.gif', x0=50)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_line.gif', x0=50, thresholdForBW=128)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_line.gif', x0=50)
     time.sleep(0.5)
 
     demo.startLedsDemoThread()
-    myPanel.uploadAndShowBitmap('bmp/goodbye.bmp')
+    myPanel.uploadAndShowBitmap('resources/bmp/goodbye.bmp')
     time.sleep(2)
     demo.stopLedsDemoThread()
 

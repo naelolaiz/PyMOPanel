@@ -88,6 +88,9 @@ def download(panel, fileType, fileId, outputFilename):
     open(outputFilename+'.info', 'w').write("{}\n".format(str(header)))
     open(outputFilename, 'wb').write(buffer)
     print('done!')
+def upload(panel, inputFilename, fileType, fileId):
+    # TODO. Font: [0xfe, 0x24, refId, size, data] ; bitmap: [0xfe, 0x54, refId, size, data]
+    return 
 
 def dumpAll(panel, outputFilename):
     panel.setAutoTransmitKeyPressed(False)

@@ -14,6 +14,8 @@ class KeyboardManager:
     class ThreadSerialListener(serial.threaded.Protocol):
         _panel = None
         _customCallbackForDataReceived = None
+        _saveIgnoredKeys = False
+        _ignoredKeysBuffer = bytearray()
     
         def brightnessAndContrastControlCallback(self, data):
             for currentByte in bytearray(data):
@@ -25,6 +27,8 @@ class KeyboardManager:
                     self._panel.incContrast(-5)
                 elif currentByte == Constants.RIGHT_KEY:
                     self._panel.incContrast(5)
+                elif self._saveIgnoredKeys:
+                    self._ignoredKeysBuffer.append(currentByte)
     
         def connection_made(self, transport):
             print('port connected')
@@ -55,6 +59,7 @@ class KeyboardManager:
 
     def enableKeyboardControllingContrastAndBrightness(self):
         self.ThreadSerialListener._customCallbackForDataReceived = self.ThreadSerialListener.brightnessAndContrastControlCallback
+        self.ThreadSerialListener._saveIgnoredKeys = True
         self._threadedSerialListener = serial.threaded.ReaderThread(self._serialHandler, self.ThreadSerialListener)
         self._threadedSerialListener.start()
 
