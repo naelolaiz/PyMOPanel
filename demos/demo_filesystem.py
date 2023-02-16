@@ -12,7 +12,7 @@ def main(port):
     # dump complete filesystem to a file
     fs.dumpAll(myPanel, 'filesystem.data')
 
-    print("filesystem free space: {} bytes".format(fs.free(myPanel))
+    print("filesystem free space: {} bytes".format(fs.free(myPanel)))
 
     filesystemContent = fs.ls(myPanel)
     print("filesystem content: {}".format(pprint.pformat(filesystemContent)))
