@@ -53,6 +53,7 @@ class PyMOPanel:
                76800:  0x19,
                115200: 0x10}[baud_rate]
         self.writeBytes([0xfe, 0x39, speed])
+        # TODO: reset serial connection using new baudrate
 
     # Enable or disable contrast and brightness control by the keypad
     def enableKeyboardControllingContrastAndBrightness(self):
