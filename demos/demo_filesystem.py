@@ -10,16 +10,15 @@ from PyMOPanel.font import *
 def main(port):
     myPanel = Panel(port=port)
     # dump complete filesystem to a file
-    fs.dumpAll(myPanel, 'filesystem.data')
+    myPanel.fs.downloadFilesystem('filesystem.data')
+    print("filesystem free space: {} bytes".format(myPanel.fs.free()))
 
-    print("filesystem free space: {} bytes".format(fs.free(myPanel)))
-
-    filesystemContent = fs.ls(myPanel)
+    filesystemContent = myPanel.fs.ls()
     print("filesystem content: {}".format(pprint.pformat(filesystemContent)))
 
 
     # TODO
-    #print(fs.upload(myPanel, "myFont.data", fs.FileType.FONT, 7))
+    #print(myPanel.fs.upload("myFont.data", fs.FileType.FONT, 7))
     
     print("Downloading all files:")
     for file in filesystemContent:
@@ -31,7 +30,7 @@ def main(port):
             continue
         outputFilename = '{}_{}.data'.format(file_type.name, str(file_index))
         print("Downloading {} with size {}.".format(outputFilename, file_size))
-        fileContentBuffer = fs.download(myPanel, file_type, file_index, outputFilename)
+        fileContentBuffer = myPanel.fs.download(file_type, file_index, outputFilename)
         if fileContentBuffer and file_type == fs.FileType.FONT: 
             # testing roundtrip conversion
             assert Font.fromRawDataFile(outputFilename).toBuffer() == fileContentBuffer

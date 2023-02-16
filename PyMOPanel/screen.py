@@ -6,15 +6,15 @@ class Screen:
         self._panel = panel
         self._brightness = None
         self._contrast   = None
-        self.clearScreen()
+        self.clear()
         self.setBrightness(initBrightness)
         self.setContrast(initContrast)
-        self.setScreen(True)
+        self.enable(True)
 
-    def clearScreen(self):
+    def clear(self):
         self._panel.writeBytes([0xfe, 0x58])
 
-    def setScreen(self, value):
+    def enable(self, value):
         value = bool(value)
         self._status = value
         self._panel.writeBytes([0xfe, 0x42 if value else 0x46])

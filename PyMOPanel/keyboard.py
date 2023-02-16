@@ -28,13 +28,13 @@ class KeyboardManager:
         def brightnessAndContrastControlCallback(self, data):
             for currentByte in bytearray(data):
                 if currentByte == Key.UP.value:
-                    self._panel.incBrightness(20)
+                    self._panel.screen.incBrightness(20)
                 elif currentByte == Key.DOWN.value:
-                    self._panel.incBrightness(-20)
+                    self._panel.screen.incBrightness(-20)
                 elif currentByte == Key.LEFT.value:
-                    self._panel.incContrast(-5)
+                    self._panel.screen.incContrast(-5)
                 elif currentByte == Key.RIGHT.value:
-                    self._panel.incContrast(5)
+                    self._panel.screen.incContrast(5)
                 elif self._saveIgnoredKeys:
                     self._ignoredKeysBuffer.append(currentByte)
     
