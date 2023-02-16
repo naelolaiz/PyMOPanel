@@ -17,16 +17,28 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
    - keyboard to OSC example
    - OSC / MIDI monitor with bar graphs
    - custom widgets for controllers / monitors? (knobs, ...)
- - [x] ~.bmp to screen~
- - [x] ~upload animated .gif to screen!~
- - allow FM and AM in Lissajous demo
+ - graphics
+   - [x] ~.bmp to screen~
+   - [x] ~upload animated .gif to screen!~
+   - [x] ~download bitmaps~
+   - upload bitmaps
+   - allow FM and AM in Lissajous demo
  - optimizations
    - use uploaded bitmaps instead for faster animations
-   - use numpy.array's to precalculate trigonometric functions in vectors  
+   - use numpy.array's to precalculate trigonometric functions in vectors
+ - fonts
+   - [x] ~font to ascii numpy arrays~
+   - [x] ~ascii numpy arrays to font~
+   - [x] ~downloader~
+   - uploader
  - filesystem
-   - [x] ~dumpers~
-   - "ls"
+   - [x] ~filesystem to .data dump~
    - .data to filesystem
+   - decoding filesystem to files
+   - [x] ~ls~
+   - [x] ~move~
+   - [x] ~rm~
+   - [x] ~free~
    - helpers
      - .data to .bmp?
  - hack for Quake to use the panel as display + input device?     
