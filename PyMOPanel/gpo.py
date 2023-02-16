@@ -15,8 +15,8 @@ class GPO:
         self.setLed(1, led1)
         self.setLed(2, led2)
 
-    def setGPOState(self, gpio, value):
-        self._panel.writeBytes([0xfe, 0x56 if value == 0 else 0x57, gpio])
+    def setGPOState(self, gpo, value):
+        self._panel.writeBytes([0xfe, 0x56 if value == 0 else 0x57, gpo])
 
     def setLed(self, led, state):
         self._leds[led] = state
