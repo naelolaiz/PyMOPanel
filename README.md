@@ -23,6 +23,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
    - [x] ~download bitmaps~
    - create helper for threaded animations, so several animations on different screen positions are played (to check how serially-interleaved frames work)
    - upload bitmaps
+   - save fs image to .bmp
    - implement strip charts
    - allow FM and AM in Lissajous demo
  - optimizations
@@ -44,6 +45,4 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
    - [x] ~rm~
    - [x] ~free~
    - implement xmodem?
-   - helpers
-     - .data to .bmp?
  - hack for Quake to use the panel as display + input device?     
