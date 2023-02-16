@@ -1,4 +1,5 @@
 from enum import Enum
+from .font import Font
 
 class FileType(Enum):
     FONT   = 0
@@ -53,9 +54,46 @@ def download(panel, fileType, fileId, outputFilename = None):
         print('done!')
     return buffer
 
+def move(panel, oldType, oldId, newType, newId):
+    panel.writeBytes([0xfe, 0xb4, oldType.value, oldId, newType.value, newId])
+
+def rm(panel, fileType, refId):
+    panel.writeBytes([0xfe, 0xad, fileType, refId])
+    
 def upload(panel, inputFilename, fileType, fileId):
+#    panel.resetInputState()
+    def expectKey(panel, expectedKey):
+        #print( panel._serialHandler.in_waiting)
+        #while panel._serialHandler.in_waiting>0:
+        readKey = panel.readBytes(1)
+        print("{} : {}".format(readKey,expectedKey))
+        return readKey == expectedKey
+    if fileType == FileType.BITMAP:
+        print("bitmap uploading not supported yet")
+        return
     # TODO. Font: [0xfe, 0x24, refId, size, data] ; bitmap: [0xfe, 0x54, refId, size, data]
-    return 
+    fileBuffer = open(inputFilename,'rb').read()
+    font = Font.fromBuffer(fileBuffer)
+    bufferToWrite=font.toBuffer()
+    print (len(fileBuffer))
+    assert bufferToWrite == fileBuffer
+    assert font.getBufferSize() == len(fileBuffer)
+    print (bytes([0xfe, 0x24]) +int(fileId).to_bytes(length=1,byteorder='little') + len(fileBuffer).to_bytes(length=2, byteorder='little'))
+    panel.writeBytes(bytes([0xfe, 0x24]) +int(fileId).to_bytes(length=1,byteorder='little') + len(fileBuffer).to_bytes(length=2, byteorder='little'))
+    if not expectKey(panel, b'\x01'):
+        print("Panel aborted uploading")
+        return False
+
+    # here the manual says to send a 0x01, but it gets echoed by the panel, and then a byte is missing at the end, so apparently it is an error.
+
+    for i,b in enumerate(bufferToWrite):
+        print(i)
+        panel.writeBytes(b.to_bytes(length=1, byteorder='little'))
+        if not expectKey(panel, b.to_bytes(length=1, byteorder='little')):
+            print("error uploading file")
+            return False
+        panel.writeBytes(b'\x01')
+    return True
 
 def dumpAll(panel, outputFilename):
     panel.setAutoTransmitKeyPressed(False)

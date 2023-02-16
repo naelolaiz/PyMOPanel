@@ -26,8 +26,7 @@ class Font:
         return self.getCharsCount() * 3
 
     def getBufferSize(self):
-        return self.getHeaderSize() + self.getCharTableSize() + self.getCharsCount()
-
+        return self.getHeaderSize() + self.getCharTableSize() + sum([len(char._data) for char in self._chars])
 
     def toBuffer(self):
         outputBuffer = bytearray(self.getBufferSize())
@@ -46,7 +45,6 @@ class Font:
         char_table_offset = bufferIndex
         char_data_offset  = bufferIndex + self.getCharTableSize()
         for char in self._chars:
-            print("toBuffer {} ; {} :".format(char_table_offset, char_data_offset))
             outputBuffer[char_table_offset:char_table_offset+2] = int(char_data_offset).to_bytes(length=2, byteorder='big')
             char_table_offset += 2
             outputBuffer[char_table_offset] = char._width
@@ -90,7 +88,6 @@ class Font:
         font._chars = []
         for ch in range(font._ascii_range[0], font._ascii_range[1]+1):
             offset = int.from_bytes(inputBuffer[bufferIndex:bufferIndex+2], byteorder='big')
-            print("fromBuffer {} ; {} :".format(bufferIndex, offset))
             bufferIndex += 2
             char_width = inputBuffer[bufferIndex]
             bufferIndex += 1
