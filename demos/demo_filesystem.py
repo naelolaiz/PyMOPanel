@@ -9,14 +9,17 @@ from PyMOPanel.font import *
 
 def main(port):
     myPanel = Panel(port=port)
-
     # dump complete filesystem to a file
     fs.dumpAll(myPanel, 'filesystem.data')
 
-    print("filesystem free space: {} bytes".format(fs.getFreeSpaceInBytes(myPanel)))
+    print("filesystem free space: {} bytes".format(fs.free(myPanel))
 
     filesystemContent = fs.ls(myPanel)
     print("filesystem content: {}".format(pprint.pformat(filesystemContent)))
+
+
+    # TODO
+    #print(fs.upload(myPanel, "myFont.data", fs.FileType.FONT, 7))
     
     print("Downloading all files:")
     for file in filesystemContent:
@@ -34,8 +37,6 @@ def main(port):
             assert Font.fromRawDataFile(outputFilename).toBuffer() == fileContentBuffer
             # write the data in a file with numpy array
             Font.fromBuffer(fileContentBuffer).saveDictOfUnpackedNumpyArray("{}.npArrayDict".format(outputFilename))
-              
-
             myDict = Font.fromBuffer(fileContentBuffer).toDictOfUnpackedNumpyArray()
             #assert myDict == Font.fromDictOfUnpackedNumpyArray(myDict).toDictOfUnpackedNumpyArray()
             #open("a", "wb").write(Font.fromDictOfUnpackedNumpyArray(myDict).toBuffer())

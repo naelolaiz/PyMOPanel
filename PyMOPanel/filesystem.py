@@ -6,7 +6,7 @@ class FileType(Enum):
     BITMAP = 1
 
 # filesystem
-def getFreeSpaceInBytes(panel):
+def free(panel):
     panel.writeBytes([0xfe, 0xaf])
     return int.from_bytes(panel.readBytes(4), byteorder='little', signed=False)
 
