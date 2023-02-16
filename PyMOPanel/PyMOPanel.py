@@ -44,7 +44,7 @@ class PyMOPanel:
         self._serialHandler.reset_input_buffer()
         
     # setup
-    def setBaudRate(self, baudrate) :
+    def setBaudRate(self, baudrate):
         speed={9600:   0xCF,
                14400:  0x8A,
                19200:  0x67,
@@ -56,6 +56,9 @@ class PyMOPanel:
         self.writeBytes([0xfe, 0x39, speed])
         sleep(0.1)
         self._serialHandler.baudrate = baudrate
+
+    def getBaudRate(self):
+        return self._serialHandler.baudrate
 
     # Enable or disable contrast and brightness control by the keypad
     def enableKeyboardControllingContrastAndBrightness(self):
@@ -147,8 +150,15 @@ class PyMOPanel:
         self._graphics.drawRectangle(color, x0, y0, x1, y1, solid)
         
     # show a bitmap. It could be an animated gif
-    def uploadAndShowBitmap(self, inputFilename, x0=0, y0=0, thresholdForBW=50, inverted = False):
-        self._graphics.uploadAndShowBitmap(inputFilename, x0, y0, thresholdForBW, inverted)
+    def uploadAndShowBitmap(self,
+                            inputFilename,
+                            x0=0,
+                            y0=0,
+                            thresholdForBW=50,
+                            inverted = False,
+                            fastBaud = True,
+                            framesPerSecond = 5):
+        self._graphics.uploadAndShowBitmap(inputFilename, x0, y0, thresholdForBW, inverted, fastBaud, framesPerSecond)
 
     # add Bar graphs
     def addBarGraph(self, x0, y0, x1, y1, direction):

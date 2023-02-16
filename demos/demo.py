@@ -40,6 +40,7 @@ class Demo:
             self._panel.drawPixel(x,y)
             radius += incRadius
             angle +=incAngle
+            time.sleep(0.00003)
 
     def startLedsDemoThread(self):
         self._ledsDemoRunning = True
@@ -88,10 +89,9 @@ class Demo:
             time.sleep(sleepTimeBetweenChange)
 
     def runDemoLissajous(self, cycles):
-        self._panel.clearScreen()
         for i in range(cycles):
             self._panel.clearScreen()
-            time.sleep(0.2)
+            #time.sleep(0.1)
             phaseX=0
             phaseY=0
             incPhaseX = random()*pi/60
@@ -102,10 +102,11 @@ class Demo:
                 self._panel.drawPixel(x,y)
                 phaseX += incPhaseX
                 phaseY += incPhaseY
-                time.sleep(0.003)
+                time.sleep(0.00003)
 
 def main(port):
     myPanel = PyMOPanel(port=port)
+    myPanel.setBaudRate(115200)
     demo = Demo(myPanel)
 
     # enable controlling brightness and contrast by the keyboard
@@ -126,7 +127,7 @@ def main(port):
 
     # stop leds blinking before the animation
     demo.stopLedsDemoThread()
-    myPanel.uploadAndShowBitmap('resources/gif/resized_scissors.gif', x0=40)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_scissors.gif', x0=40, framesPerSecond = 3)
     demo.startLedsDemoThread()
     time.sleep(1)
 
@@ -135,26 +136,26 @@ def main(port):
 
     time.sleep(1)
 
-    # draw 10 Lissajous curves
-    demo.runDemoLissajous(10)
+    # draw Lissajous curves
+    demo.runDemoLissajous(5)
 
     time.sleep(1)
 
-    # draw 10 spirals
-    demo.runDemoSpirals(10)
+    # draw spirals
+    demo.runDemoSpirals(40)
     
     # stop keyboard thread 
     myPanel.disableKeyboardControllingContrastAndBrightness()
 
     # start keyboard demo
-    demo.runDemoPressedKeys(8)
+    demo.runDemoPressedKeys(5)
 
     # show a BMP and exit
     demo.stopLedsDemoThread()
     myPanel.clearScreen()
     time.sleep(1)
-    myPanel.uploadAndShowBitmap('resources/gif/resized_corridor.gif', x0=40)
-    myPanel.uploadAndShowBitmap('resources/gif/resized_corridor.gif', x0=40, inverted=True)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_corridor.gif', x0=40, framesPerSecond = 10)
+    myPanel.uploadAndShowBitmap('resources/gif/resized_corridor.gif', x0=40, inverted=True, framesPerSecond = 6)
     time.sleep(0.2)
     myPanel.uploadAndShowBitmap('resources/gif/resized_line.gif', x0=50, thresholdForBW=128)
     myPanel.uploadAndShowBitmap('resources/gif/resized_line.gif', x0=50)
@@ -170,6 +171,7 @@ def main(port):
     time.sleep(1)
     for i in range(3):
         myPanel.setLed(i, LedStatus.OFF)
+    myPanel.setBaudRate(19200)
 
 if __name__ == '__main__':
     port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'

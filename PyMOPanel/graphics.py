@@ -1,5 +1,6 @@
 from PIL import Image
 from typing import Final
+import time
 from .helpers import sanitizeUint8
 
 class Graphics:
@@ -40,11 +41,12 @@ class Graphics:
                          sanitizeUint8(y1)])
 
     # show a bitmap. It could be an animated gif
-    def uploadAndShowBitmap(self, inputFilename, x0=0, y0=0, thresholdForBW=50, inverted = False):
+    def uploadAndShowBitmap(self, inputFilename, x0=0, y0=0, thresholdForBW=50, inverted=False, fastBaud=True, framesPerSecond=5):
+        framePeriod = 1/framesPerSecond
         img = Image.open(inputFilename)
         width = img.width
         height = img.height
-        isAnimation = hasattr(img,"n_frames")
+        isAnimation = hasattr(img,'n_frames')
         frames = img.n_frames if isAnimation else 2
 
         def getValueForAboveThreshold(bitIndex, inverted):
@@ -59,10 +61,19 @@ class Graphics:
             for i in range(dataSize):
                 sum += inputByteArray[base+i]
             return sum/dataSize
-
+        previousBaudRate = self._panel.getBaudRate()
+        if previousBaudRate != 115200:
+            self._panel.setBaudRate(115200)
+        nextFrameExpectedTimestamp = time.time()
         for frame in range(1,frames):
-            if isAnimation: 
+            if isAnimation:
                 img.seek(frame)
+                thisFrameTimestamp = time.time()
+                sleepTime = nextFrameExpectedTimestamp - thisFrameTimestamp
+                if sleepTime > 0: 
+                    time.sleep(sleepTime)
+                nextFrameExpectedTimestamp = thisFrameTimestamp + framePeriod
+                
             bitDepth = {'1':1, 'L':8, 'P':8, 'RGB':24, 'RGBA':32, 'CMYK':32, 'YCbCr':24, 'I':32, 'F':32}[img.mode]
             bytesPerPixel = bitDepth / 8
 
@@ -84,3 +95,5 @@ class Graphics:
 
             # send data
             self._panel.writeBytes(bytes(outputArray))
+        if previousBaudRate != 115200:
+            self._panel.setBaudRate(previousBaudRate)

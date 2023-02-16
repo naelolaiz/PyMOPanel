@@ -24,6 +24,7 @@ def ls(panel):
         offset += 1
         if not used:
             # ignore the remaining bytes
+            print("ignoring unused file {}".format(entryNumber))
             continue
         # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
         typeAndFileId = buffer[offset]
@@ -41,7 +42,9 @@ def download(panel, fileType, fileId, outputFilename = None):
     error = False
     panel.setAutoTransmitKeyPressed(False)
     panel.resetInputState()
-    panel.setBaudRate(115200)
+    previousBaudRate = panel.getBaudRate()
+    if previousBaudRate != 115200:
+        panel.setBaudRate(115200)
     panel.writeBytes([0xfe, 0xb2, fileType.value, fileId])
     fileSizeInBytes = int.from_bytes(panel.readBytes(4), byteorder='little', signed=False)
     if fileSizeInBytes == 0:
@@ -55,7 +58,8 @@ def download(panel, fileType, fileId, outputFilename = None):
             print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
             open(outputFilename, 'wb').write(buffer)
             print('done!')
-    panel.setBaudRate(19200)
+    if previousBaudRate != 115200:
+        panel.setBaudRate(previousBaudRate)
     return None if error else buffer
 
 def move(panel, oldType, oldId, newType, newId):
@@ -67,7 +71,9 @@ def rm(panel, fileType, refId):
 def upload(panel, inputFilename, fileType, fileId):
     panel.resetInputState()
     error = False
-    panel.setBaudRate(115200)
+    previousBaudRate = panel.getBaudRate()
+    if previousBaudRate != 115200:
+        panel.setBaudRate(115200)
     # TODO: add timeout
     def expectKey(panel, expectedKey):
         readKey = panel.readBytes(1)
@@ -100,18 +106,23 @@ def upload(panel, inputFilename, fileType, fileId):
                 print("error uploading file")
                 error = True
             panel.writeBytes(b'\x01')
-    panel.setBaudRate(19200)
+
+    if previousBaudRate != 115200:
+        panel.setBaudRate(previousBaudRate)
     return not error
 
 def dumpAll(panel, outputFilename):
     panel.setAutoTransmitKeyPressed(False)
     panel.resetInputState()
-    panel.setBaudRate(115200)
+    previousBaudRate = panel.getBaudRate()
+    if previousBaudRate != 115200:
+        panel.setBaudRate(115200)
     panel.writeBytes([0xfe, 0x30])
     filesystemSize = int.from_bytes(panel.readBytes(4), byteorder='little', signed=False)
     print('Dumping panel filesystem to {}...'.format(outputFilename))
     open(outputFilename, 'wb').write(panel.readBytes(filesystemSize))
-    panel.setBaudRate(19200)
+    if previousBaudRate != 115200:
+        panel.setBaudRate(previousBaudRate)
     panel.setAutoTransmitKeyPressed(True)
     print('done!')
 
