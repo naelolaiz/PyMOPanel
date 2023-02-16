@@ -10,8 +10,8 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
 ### TODO
  - separate Driver from Controller and Demo logic
    - [x] ~classes~
-   - files
- - create proper module
+   - [x] files
+ - create proper module and python package
  - create menu helper (a la curses) to allow adding items with custom callback functions
  - MIDI / OSC
    - keyboard to OSC example
