@@ -6,6 +6,7 @@ from .screen import Screen
 from .text import Text
 from .graphics import Graphics
 from .gpo import LedStatus, GPO
+from time import sleep
 
 class PyMOPanel:
     def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
@@ -43,7 +44,7 @@ class PyMOPanel:
         self._serialHandler.reset_input_buffer()
         
     # setup
-    def setBaudRate(self, baud_rate) :
+    def setBaudRate(self, baudrate) :
         speed={9600:   0xCF,
                14400:  0x8A,
                19200:  0x67,
@@ -51,9 +52,10 @@ class PyMOPanel:
                38400:  0x33,
                57600:  0x22,
                76800:  0x19,
-               115200: 0x10}[baud_rate]
+               115200: 0x10}[baudrate]
         self.writeBytes([0xfe, 0x39, speed])
-        # TODO: reset serial connection using new baudrate
+        sleep(0.1)
+        self._serialHandler.baudrate = baudrate
 
     # Enable or disable contrast and brightness control by the keypad
     def enableKeyboardControllingContrastAndBrightness(self):
