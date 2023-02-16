@@ -1,6 +1,6 @@
 from PIL import Image
 from typing import Final
-from .helpers import sanitizeUint8, sumChannels
+from .helpers import sanitizeUint8
 
 class Graphics:
     PANEL_WIDTH:  Final[int] = 192
@@ -46,10 +46,19 @@ class Graphics:
         height = img.height
         isAnimation = hasattr(img,"n_frames")
         frames = img.n_frames if isAnimation else 2
+
         def getValueForAboveThreshold(bitIndex, inverted):
             return 1<<(7-bitIndex) if inverted else 0
         def getValueForBelowThreshold(bitIndex, inverted):
             return getValueForAboveThreshold(bitIndex, not inverted)
+
+        def sumChannels(inputByteArray, offset, dataSize):
+            dataSize=int(dataSize)
+            sum=0
+            base = offset*dataSize
+            for i in range(dataSize):
+                sum += inputByteArray[base+i]
+            return sum/dataSize
 
         for frame in range(1,frames):
             if isAnimation: 
