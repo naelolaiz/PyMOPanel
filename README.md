@@ -26,9 +26,9 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
    - save fs image to .bmp
    - implement strip charts
    - allow FM and AM in Lissajous demo
- - optimizations
-   - use uploaded bitmaps instead for faster animations
-   - use numpy.array's to precalculate trigonometric functions in vectors
+   - optimizations
+     - use uploaded bitmaps instead for faster animations
+     - use numpy.array's to precalculate trigonometric functions in vectors
  - bar graphs
    - improve code (allow deleting, ...)
  - fonts
