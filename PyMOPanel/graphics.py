@@ -1,7 +1,12 @@
 from PIL import Image
+from typing import Final
 from .helpers import sanitizeUint8, sumChannels
 
 class Graphics:
+    PANEL_WIDTH:  Final[int] = 192
+    CENTER_X:     Final[int] = int(PANEL_WIDTH/2)
+    PANEL_HEIGHT: Final[int] = 64
+    CENTER_Y:     Final[int] = int(PANEL_HEIGHT/2)
     def __init__(self, panel):
         self._panel = panel
 

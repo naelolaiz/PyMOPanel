@@ -7,8 +7,8 @@ from sys import argv, path
 path.append("..")
 
 from PyMOPanel import PyMOPanel
-from PyMOPanel.constants import Constants
-from PyMOPanel.bar_graph import Direction
+from PyMOPanel.graphics import Graphics
+from PyMOPanel.bar_graph import Direction, BarGraphManager
 from PyMOPanel.gpo import LedStatus
 
 class Demo:
@@ -35,7 +35,7 @@ class Demo:
         while radius < maxRadius:
             x = int(centerPos[0] + cos(angle) * radius)
             y = int(centerPos[1] + sin(angle) * radius)
-            if x<0 or x>Constants.PANEL_WIDTH or y <0 or y > Constants.PANEL_HEIGHT:
+            if x<0 or x>Graphics.PANEL_WIDTH or y <0 or y > Graphics.PANEL_HEIGHT:
                 break
             self._panel.drawPixel(x,y)
             radius += incRadius
@@ -60,14 +60,14 @@ class Demo:
 
     def runDemoSpirals(self, spiralsCount):
         self._panel.clearScreen()
-        self.drawSpiral(200, [Constants.CENTER_X, Constants.CENTER_Y], Constants.PANEL_HEIGHT)
+        self.drawSpiral(200, [Graphics.CENTER_X, Graphics.CENTER_Y], Graphics.PANEL_HEIGHT)
         sign = 1
         for i in range(spiralsCount-1):
             offsetX = randint(-75,75)
             offsetY = randint(-20,20)
             self.drawSpiral(200, 
-                                   [Constants.CENTER_X + offsetX, Constants.CENTER_Y + offsetY],
-                                   randint(10,Constants.PANEL_HEIGHT),
+                                   [Graphics.CENTER_X + offsetX, Graphics.CENTER_Y + offsetY],
+                                   randint(10,Graphics.PANEL_HEIGHT),
                                    incAngle = sign * pi / randint(10,60),
                                    incRadius = 0.02 + 0.25 * random())
             sign = sign * -1
@@ -75,11 +75,11 @@ class Demo:
     def runDemoBarGraphs(self, changesCount, sleepTimeBetweenChange = 0.03):
         self._panel.clearScreen()
         time.sleep(0.2)
-        numberOfBars = Constants.MAX_NUMBER_OF_BARS
-        deltaX = int(Constants.PANEL_WIDTH / numberOfBars)
-        for i in range(0, Constants.PANEL_WIDTH, deltaX):
+        numberOfBars = BarGraphManager.MAX_NUMBER_OF_BARS
+        deltaX = int(Graphics.PANEL_WIDTH / numberOfBars)
+        for i in range(0, Graphics.PANEL_WIDTH, deltaX):
             index = self._panel.addBarGraph(i, 0,
-                                            i+deltaX-1, Constants.PANEL_HEIGHT,
+                                            i+deltaX-1, Graphics.PANEL_HEIGHT,
                                             Direction(Direction.VERTICAL_BOTTOM_TO_TOP))
         scaler = 1/1.3
         for i in range(changesCount):
@@ -97,8 +97,8 @@ class Demo:
             incPhaseX = random()*pi/60
             incPhaseY = random()*pi/60
             for frame in range(1500):
-                x = Constants.CENTER_X + int(Constants.CENTER_X * cos(phaseX))
-                y = Constants.CENTER_Y + int(Constants.CENTER_Y * sin(phaseY))
+                x = Graphics.CENTER_X + int(Graphics.CENTER_X * cos(phaseX))
+                y = Graphics.CENTER_Y + int(Graphics.CENTER_Y * sin(phaseY))
                 self._panel.drawPixel(x,y)
                 phaseX += incPhaseX
                 phaseY += incPhaseY

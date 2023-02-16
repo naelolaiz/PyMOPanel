@@ -1,13 +1,21 @@
 import serial.threaded
 import traceback
 from .helpers import *
-from .constants import Constants
 from enum import Enum
 
 class AutoRepeatKeyMode(Enum):
-    RESEND_KEY  = 0,
-    KEY_UP_DOWN = 1,
+    RESEND_KEY  = 0
+    KEY_UP_DOWN = 1
     OFF = 3
+
+class Key(Enum):
+    UP          = 0x42
+    DOWN        = 0x48
+    LEFT        = 0x44
+    RIGHT       = 0x43
+    CENTER      = 0x45
+    TOP_LEFT    = 0x41
+    BOTTOM_LEFT = 0x47
 
 class KeyboardManager:
     # class for handling threaded serial input. Note that (static) attributes need to be set. _panel is mandatory, _customCallbackForDataReceived is optional. brightnessAndContrastControlCallback is provided as an example of default behavior. Thread can be started and stopped
@@ -19,13 +27,13 @@ class KeyboardManager:
     
         def brightnessAndContrastControlCallback(self, data):
             for currentByte in bytearray(data):
-                if currentByte == Constants.UP_KEY:
+                if currentByte == Key.UP.value:
                     self._panel.incBrightness(20)
-                elif currentByte == Constants.DOWN_KEY:
+                elif currentByte == Key.DOWN.value:
                     self._panel.incBrightness(-20)
-                elif currentByte == Constants.LEFT_KEY:
+                elif currentByte == Key.LEFT.value:
                     self._panel.incContrast(-5)
-                elif currentByte == Constants.RIGHT_KEY:
+                elif currentByte == Key.RIGHT.value:
                     self._panel.incContrast(5)
                 elif self._saveIgnoredKeys:
                     self._ignoredKeysBuffer.append(currentByte)
@@ -62,6 +70,7 @@ class KeyboardManager:
         self.ThreadSerialListener._saveIgnoredKeys = True
         self._threadedSerialListener = serial.threaded.ReaderThread(self._serialHandler, self.ThreadSerialListener)
         self._threadedSerialListener.start()
+        self.setAutoTransmitKeyPressed(True)
 
     def disableKeyboardControllingContrastAndBrightness(self):
         self._threadedSerialListener.stop()

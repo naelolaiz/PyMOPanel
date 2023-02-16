@@ -1,5 +1,5 @@
 from enum import Enum
-from .constants import Constants
+from typing import Final
 
 class Direction(Enum):
     VERTICAL_BOTTOM_TO_TOP   = 0
@@ -22,13 +22,14 @@ class BarGraph:
         return int(self._value * self._delta)
 
 class BarGraphManager:
+    MAX_NUMBER_OF_BARS: Final[int] = 16
     def __init__(self, panel):
         self._barGraphs = []
         self._panel = panel
     # add bar graph. Returns index, or raise exception if full
     def addBarGraph(self, x0, y0, x1, y1, direction):
-        if len(self._barGraphs) == Constants.MAX_NUMBER_OF_BARS:
-            raise Exception("Cannot have more than {} bars".format(Constants.MAX_NUMBER_OF_BARS))
+        if len(self._barGraphs) == BarGraphManager.MAX_NUMBER_OF_BARS:
+            raise Exception("Cannot have more than {} bars".format(BarGraphManager.MAX_NUMBER_OF_BARS))
         self._barGraphs.append(BarGraph(x0,
                                         y0,
                                         x1,
