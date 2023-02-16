@@ -34,7 +34,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
    - [x] ~font to ascii numpy arrays~
    - [x] ~ascii numpy arrays to font~
    - [x] ~downloader~
-   - uploader
+   - uploader (WIP)
  - filesystem
    - [x] ~filesystem to .data dump~
    - .data to filesystem
