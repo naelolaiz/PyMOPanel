@@ -109,6 +109,9 @@ def main(port):
     myPanel.setBaudRate(115200)
     demo = Demo(myPanel)
 
+    # in my panel neither of these work
+    print("Version number: {}. Module type: {}".format(myPanel.getVersionNumber(), myPanel.getModuleType()))
+
     # enable controlling brightness and contrast by the keyboard
     myPanel.keyboard.enableKeyboardControllingContrastAndBrightness()
 

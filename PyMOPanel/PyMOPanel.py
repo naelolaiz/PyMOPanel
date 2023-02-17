@@ -61,3 +61,50 @@ class PyMOPanel:
 
     def getBaudRate(self):
         return self._serialHandler.baudrate
+
+    def getVersionNumber(self):
+        self.writeBytes([0xfe, 0x36])
+        version = self.readBytes(1)
+        return "{}.{}".format(version[0]&0xf, (version[0]>>4)&0xf) if version else ""
+
+    def getModuleType(self):
+        self.writeBytes([0xfe, 0x37])
+        module = self.readBytes(1)
+        if not module:
+            return ""
+        return  {0x01: "LCD0821",            0x02: "LCD2021",
+                 0x05: "LCD2041",            0x06: "LCD4021",
+                 0x07: "LCD4041",            0x08: "LK202-25",
+                 0x09: "LK204-25",           0x0A: "LK404-55",
+                 0x0B: "VFD2021",            0x0C: "VFD2041",
+                 0x0D: "VFD4021",            0x0E: "VK202-25",
+                 0x0F: "VK204-25",           0x10: "GLC12232",
+                 0x13: "GLC24064",           0x15: "GLK24064-25",
+                 0x22: "GLK12232-25",        0x24: "GLK12232-25-SM",
+                 0x25: "GLK24064-16-1U-USB", 0x26: "GLK24064-16-1U",
+                 0x27: "GLK19264-7T-1U-USB", 0x28: "GLK12232-16",
+                 0x29: "GLK12232-16-SM",     0x2A: "GLK19264-7T-1U",
+                 0x2B: "LK204-7T-1U",        0x2C: "LK204-7T-1U-USB",
+                 0x31: "LK404-AT",           0x32: "MOS-AV-162A",
+                 0x33: "LK402-12",           0x34: "LK162-12",
+                 0x35: "LK204-25PC",         0x36: "LK202-24-USB",
+                 0x37: "VK202-24-USB",       0x38: "LK204-24-USB",
+                 0x39: "VK204-24-USB",       0x3A: "PK162-12",
+                 0x3B: "VK162-12",           0x3C: "MOS-AP-162A",
+                 0x3D: "PK202-25",           0x3E: "MOS-AL-162A",
+                 0x3F: "MOS-AL-202A",        0x40: "MOS-AV-202A",
+                 0x41: "MOS-AP-202A",        0x42: "PK202-24-USB",
+                 0x43: "MOS-AL-082",         0x44: "MOS-AL-204",
+                 0x45: "MOS-AV-204",         0x46: "MOS-AL-402",
+                 0x47: "MOS-AV-402",         0x48: "LK082-12",
+                 0x49: "VK402-12",           0x4A: "VK404-55",
+                 0x4B: "LK402-25",           0x4C: "VK402-25",
+                 0x4D: "PK204-25",           0x4F: "MOS",
+                 0x50: "MOI",                0x51: "XBoard-S",
+                 0x52: "XBoard-I",           0x53: "MOU",
+                 0x54: "XBoard-U",           0x55: "LK202-25-USB",
+                 0x56: "VK202-25-USB",       0x57: "LK204-25-USB",
+                 0x58: "VK204-25-USB",       0x5B: "LK162-12-TC",
+                 0x72: "GLK240128-25",       0x73: "LK404-25",
+                 0x74: "VK404-25",           0x78: "GLT320240",
+                 0x79: "GLT480282",          0x7A: "GLT240128"}[module]
