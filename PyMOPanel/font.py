@@ -13,8 +13,6 @@ class Font:
         self._height        = 0
         self._ascii_range   = [None, None]
         self._chars         = []
-        #self._chars         = bytearray()
-
     def getCharsCount(self):
         assert len(self._chars) == 1 + self._ascii_range[1] - self._ascii_range[0]
         return len(self._chars)

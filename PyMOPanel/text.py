@@ -12,6 +12,7 @@ class Text:
         self._panel = panel
         self._currentFont = None
         self._autoScroll = None
+        self._boxSpaceModeEnabled = None
         self._leftMargin = leftMargin
         self._topMargin = topMargin
         self._charSpacing = charSpacing
@@ -54,6 +55,10 @@ class Text:
                                 self._charSpacing,
                                 self._lineSpacing,
                                 self._lastYRow])
+
+    def setBoxSpaceMode(self, value):
+        self._boxSpaceModeEnabled = value
+        self._panel.writeBytes([0xfe, 0xac, 1 if value else 0])
 
     def selectCurrentFont(self, font_ref_id) :
         self._currentFont = sanitizeUint8(font_ref_id)

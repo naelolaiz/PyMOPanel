@@ -145,3 +145,20 @@ class Filesystem:
     
     def wipeFS(self):
         self._panel.writeBytes([0xfe, 0x21, 0x59, 0x21])
+    
+    def writeCustomerData(self, data):
+        expectedLength = 16
+        dataLength = len(data)
+        assert dataLength <= expectedLength
+        # padding bytes
+        if len(data) < expectedLength:
+            padding = (' ' if type(data) == str else b'\x20') * (expectedLength - dataLength)
+            data += padding
+        if type(data) == str:
+            data = bytes(data, 'UTF-8')
+        self._panel.writeBytes(bytes([0xfe, 0x34]) + data)
+
+    def readCustomerData(self):
+        expectedLength = 16
+        self._panel.writeBytes([0xfe, 0x35])
+        return self._panel.readBytes(16)

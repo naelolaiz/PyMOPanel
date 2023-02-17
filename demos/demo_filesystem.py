@@ -9,8 +9,14 @@ from PyMOPanel.font import *
 
 def main(port):
     myPanel = Panel(port=port)
+
+    print("Customer data: {}".format(str(myPanel.fs.readCustomerData())))
+    # uncomment if you want to ovewrite the customer data
+    #myPanel.fs.writeCustomerData("Up to 16 chars")
+
     # dump complete filesystem to a file
     myPanel.fs.downloadFS('filesystem.data')
+
     print("filesystem free space: {} bytes".format(myPanel.fs.free()))
 
     filesystemContent = myPanel.fs.ls()
