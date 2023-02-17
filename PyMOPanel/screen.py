@@ -14,10 +14,13 @@ class Screen:
     def clear(self):
         self._panel.writeBytes([0xfe, 0x58])
 
-    def enable(self, value):
+    def enable(self, value, minsToEnable = 0):
         value = bool(value)
         self._status = value
-        self._panel.writeBytes([0xfe, 0x42 if value else 0x46])
+        if value:
+            self._panel.writeBytes([0xfe, 0x42, int(minsToEnable)])
+        else:
+            self._panel.writeBytes([0xfe, 0x46])
 
     def setBrightness(self, brightness):
         sanitizedValue = sanitizeUint8(brightness)

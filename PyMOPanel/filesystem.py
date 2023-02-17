@@ -24,7 +24,7 @@ class Filesystem:
             offset += 1
             if not used:
                 # ignore the remaining bytes
-                print("ignoring unused file {}".format(entryNumber))
+                #print("ignoring unused file {}".format(entryNumber))
                 continue
             # bit0: type (0 is font, 1 bitmap), bit1..bit7: fileId
             typeAndFileId = buffer[offset]
@@ -58,7 +58,7 @@ class Filesystem:
             self._panel.setBaudRate(previousBaudRate)
         return None if error else buffer
     
-    def uploadFile(self, inputFilename, fileType, fileId):
+    def _upload(self, header, data):
         error = False
         previousBaudRate = self._panel.getBaudRate()
         if previousBaudRate != 115200:
@@ -68,37 +68,40 @@ class Filesystem:
             readKey = panel.readBytes(1)
             #print("{} : {}".format(readKey,expectedKey))
             return readKey == expectedKey
-        if fileType == FileType.BITMAP:
-            print("bitmap uploading not supported yet")
-            return
-    
-        # TODO. Font: [0xfe, 0x24, refId, size, data] ; bitmap: [0xfe, 0x54, refId, size, data]
-    
-        fileBuffer = open(inputFilename,'rb').read()
-        font = Font.fromBuffer(fileBuffer)
-        bufferToWrite=font.toBuffer()
-        #print (len(fileBuffer))
-        assert bufferToWrite == fileBuffer
-        assert font.getBufferSize() == len(fileBuffer)
-        #print (bytes([0xfe, 0x24]) +int(fileId).to_bytes(length=1,byteorder='little') + len(fileBuffer).to_bytes(length=2, byteorder='little'))
-        self._panel.writeBytes(bytes([0xfe, 0x24]) +int(fileId).to_bytes(length=1,byteorder='little') + len(fileBuffer).to_bytes(length=2, byteorder='little'))
+
+        # send header and expect the confirmation byte
+        self._panel.writeBytes(header)
         if not expectKey(self._panel, b'\x01'):
             print("Panel aborted uploading")
             error = True
         else:
             # here the manual says to send a 0x01, but it gets echoed by the panel, and then a byte is missing at the end, so apparently it is an error.
     
-            for i,b in enumerate(bufferToWrite):
-                #print(i)
+            # send data byte per byte, check the echoed byte from the panel, and send a confirmation byte before sending the next one from the buffer
+            for i,b in enumerate(data):
                 self._panel.writeBytes(b.to_bytes(length=1, byteorder='little'))
                 if not expectKey(self._panel, b.to_bytes(length=1, byteorder='little')):
                     print("error uploading file")
                     error = True
                 self._panel.writeBytes(b'\x01')
-    
+
         if previousBaudRate != 115200:
             self._panel.setBaudRate(previousBaudRate)
         return not error
+
+    def uploadFont(self, inputFilename, fileId):
+        # TODO bitmap: [0xfe, 0x54, refId, size, data]
+        #if fileType == FileType.BITMAP:
+        #    print("bitmap uploading not supported yet")
+        #    return
+        fileBuffer = open(inputFilename,'rb').read()
+        font = Font.fromBuffer(fileBuffer)
+        bufferToWrite=font.toBuffer()
+        #print (len(fileBuffer))
+        assert bufferToWrite == fileBuffer
+        assert font.getBufferSize() == len(fileBuffer)
+        header = bytes([0xfe, 0x24]) +int(fileId).to_bytes(length=1,byteorder='little') + len(fileBuffer).to_bytes(length=2, byteorder='little')
+        return self._upload(header, bufferToWrite)
     
     def mv(self, oldType, oldId, newType, newId):
         self._panel.writeBytes([0xfe, 0xb4, oldType.value, oldId, newType.value, newId])
@@ -106,7 +109,7 @@ class Filesystem:
     def rm(self, fileType, refId):
         self._panel.writeBytes([0xfe, 0xad, fileType.value, refId])
         
-    def downloadFilesystem(self, outputFilename):
+    def downloadFS(self, outputFilename):
         previousBaudRate = self._panel.getBaudRate()
         if previousBaudRate != 115200:
             self._panel.setBaudRate(115200)
@@ -117,6 +120,13 @@ class Filesystem:
         if previousBaudRate != 115200:
             self._panel.setBaudRate(previousBaudRate)
         print('done!')
+
+    def uploadFS(self, inputFilename):
+        bufferToWrite = open(inputFilename, 'rb').read()
+        bufferSize = len(bufferToWrite)
+        assert bufferSize <= 16384
+        header = bytes([0xfe, 0xb0]) + bufferSize.to_bytes(length=4, byteorder='little')
+        return self._upload(header, bufferToWrite)
     
-    def wipeFilesystem(self):
+    def wipeFS(self):
         self._panel.writeBytes([0xfe, 0x21, 0x59, 0x21])
