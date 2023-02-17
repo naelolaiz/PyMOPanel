@@ -65,6 +65,7 @@ class Filesystem:
             self._panel.setBaudRate(115200)
         def expectKey(panel, expectedKey):
             readKey = panel.readBytes(1)
+            #print("{} {}".format(readKey,expectedKey))
             return readKey == expectedKey
 
         # send header and expect the confirmation byte
@@ -77,10 +78,15 @@ class Filesystem:
     
             # send data byte per byte, check the echoed byte from the panel, and send a confirmation byte before sending the next one from the buffer
             for i,b in enumerate(data):
+                # each 10 bytes update progress bar
+                #if i%10 == 0:
+                #    stdout.write("[{:{}}] {:.1f}%".format("="*i, 10, (100/10)*i))
+                #    stdout.flush()
                 self._panel.writeBytes(b.to_bytes(length=1, byteorder='little'))
                 if not expectKey(self._panel, b.to_bytes(length=1, byteorder='little')):
                     print("error uploading file")
                     error = True
+                    break
                 self._panel.writeBytes(b'\x01')
 
         if previousBaudRate != 115200:

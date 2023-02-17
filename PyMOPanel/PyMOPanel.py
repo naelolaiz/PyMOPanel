@@ -10,7 +10,7 @@ from .filesystem import Filesystem
 from time import sleep
 
 class PyMOPanel:
-    def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200, timeout = 0.3):
+    def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200, timeout = 1):
         self._port = port
         self._baudrate = baudrate
         self._serialSendLock = Lock()
