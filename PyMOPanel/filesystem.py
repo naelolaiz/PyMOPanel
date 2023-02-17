@@ -42,19 +42,18 @@ class Filesystem:
         
     @useHighSpeedDecorator 
     def downloadFile(self, fileType, fileId, outputFilename = None):
-        error = False
         self._panel.writeBytes([0xfe, 0xb2, fileType.value, fileId])
         fileSizeInBytes = int.from_bytes(self._panel.readBytes(4), byteorder='little', signed=False)
         if fileSizeInBytes == 0:
             print("File size == 0! Aborting download")
-            error = True
-        else: 
-            buffer = self._panel.readBytes(fileSizeInBytes)
-            if outputFilename:
-                print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
-                open(outputFilename, 'wb').write(buffer)
-                print('done!')
-        return None if error else buffer
+            return
+
+        buffer = self._panel.readBytes(fileSizeInBytes)
+        if outputFilename:
+            print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
+            open(outputFilename, 'wb').write(buffer)
+            print('done!')
+        return  buffer
 
     @useHighSpeedDecorator 
     def _upload(self, header, data):
@@ -62,7 +61,6 @@ class Filesystem:
         if len(header) == 0 or len(data) == 0:
             print("empty header or data. aborting upload")
             return
-        error = False
         #print("header: {} . len(data): {}".format(header, len(data)))
         def expectKey(panel, expectedKey):
             readKey = panel.readBytes(1)
@@ -73,26 +71,25 @@ class Filesystem:
         self._panel.writeBytes(header)
         if not expectKey(self._panel, b'\x01'):
             print("Panel aborted uploading")
-            error = True
-        else:
-            # here the manual says to send a 0x01, but it gets echoed by the panel, and then a byte is missing at the end, so apparently it is an error.
+            return False
+
+        # here the manual says to send a 0x01, but it gets echoed by the panel, and then a byte is missing at the end, so apparently it is an error.
     
-            # send data byte per byte, check the echoed byte from the panel, and send a confirmation byte before sending the next one from the buffer
-            for i,b in enumerate(data):
-                #print(i)
-                # each 10 bytes update progress bar
-                if i%10 == 0:
-                     stdout.write('.')
-                #    stdout.write("[{:{}}] {:.1f}%".format("="*i, 10, (100/10)*i))
-                     stdout.flush()
-                self._panel.writeBytes(b.to_bytes(length=1, byteorder='little'))
-                if not expectKey(self._panel, b.to_bytes(length=1, byteorder='little')):
-                    print("error uploading file")
-                    error = True
-                    break
-                self._panel.writeBytes(b'\x01')
-            print("")
-        return not error
+        # send data byte per byte, check the echoed byte from the panel, and send a confirmation byte before sending the next one from the buffer
+        for i,b in enumerate(data):
+            #print(i)
+            # each 10 bytes update progress bar
+            if i%10 == 0:
+                 stdout.write('.')
+            #    stdout.write("[{:{}}] {:.1f}%".format("="*i, 10, (100/10)*i))
+                 stdout.flush()
+            self._panel.writeBytes(b.to_bytes(length=1, byteorder='little'))
+            if not expectKey(self._panel, b.to_bytes(length=1, byteorder='little')):
+                print("error uploading file")
+                return False
+            self._panel.writeBytes(b'\x01')
+        print("")
+        return True
 
     def uploadFont(self, inputFilename, fileId):
         # TODO bitmap: [0xfe, 0x54, refId, size, data]

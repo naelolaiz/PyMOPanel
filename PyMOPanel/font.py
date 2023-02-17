@@ -13,6 +13,13 @@ class Font:
         self._height        = 0
         self._ascii_range   = [None, None]
         self._chars         = []
+
+    def getNominalWidth(self):
+        return self._nominal_width
+
+    def getHeight(self):
+        return self._height
+
     def getCharsCount(self):
         assert len(self._chars) == 1 + self._ascii_range[1] - self._ascii_range[0]
         return len(self._chars)
@@ -73,6 +80,10 @@ class Font:
         open(outputFilename, 'w').write(pprint.pformat(self.toDictOfUnpackedNumpyArray()).replace(" array", "\narray"))
 
     def fromBuffer(inputBuffer):
+        print(len(inputBuffer))
+        if not inputBuffer or len(inputBuffer) == 0:
+            print("Aborting font import of empty buffer")
+            return 
         font = Font()
         bufferIndex = 0
         font._nominal_width  = inputBuffer[bufferIndex]

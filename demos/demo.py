@@ -4,8 +4,8 @@ from math import pi, sin, cos
 from threading import Thread 
 from random import random,randint
 from sys import argv, path
-path.append("..")
 
+path.append("..")
 from PyMOPanel import PyMOPanel
 from PyMOPanel.graphics import Graphics
 from PyMOPanel.bar_graph import Direction, BarGraphManager
