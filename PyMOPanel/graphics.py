@@ -1,7 +1,7 @@
 from PIL import Image
 from typing import Final
 import time
-from .helpers import sanitizeUint8
+from .helpers import sanitizeUint8, useHighSpeedDecorator
 
 class Graphics:
     PANEL_WIDTH:  Final[int] = 192
@@ -41,6 +41,7 @@ class Graphics:
                          sanitizeUint8(y1)])
 
     # show a bitmap. It could be an animated gif
+    @useHighSpeedDecorator
     def uploadAndShowBitmap(self, inputFilename, x0=0, y0=0, thresholdForBW=50, inverted=False, fastBaud=True, framesPerSecond=5):
         framePeriod = 1/framesPerSecond
         img = Image.open(inputFilename)
@@ -61,9 +62,6 @@ class Graphics:
             for i in range(dataSize):
                 sum += inputByteArray[base+i]
             return sum/dataSize
-        previousBaudRate = self._panel.getBaudRate()
-        if previousBaudRate != 115200:
-            self._panel.setBaudRate(115200)
         nextFrameExpectedTimestamp = time.time()
         for frame in range(1,frames):
             if isAnimation:
@@ -95,5 +93,3 @@ class Graphics:
 
             # send data
             self._panel.writeBytes(bytes(outputArray))
-        if previousBaudRate != 115200:
-            self._panel.setBaudRate(previousBaudRate)

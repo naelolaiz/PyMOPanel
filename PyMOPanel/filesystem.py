@@ -1,6 +1,7 @@
 from enum import Enum
 from sys import stdout
 from .font import Font
+from .helpers import useHighSpeedDecorator
 
 class FileType(Enum):
     FONT   = 0
@@ -39,11 +40,9 @@ class Filesystem:
                          'file_size' : fileSize}]
         return entries
         
+    @useHighSpeedDecorator 
     def downloadFile(self, fileType, fileId, outputFilename = None):
         error = False
-        previousBaudRate = self._panel.getBaudRate()
-        if previousBaudRate != 115200:
-            self._panel.setBaudRate(115200)
         self._panel.writeBytes([0xfe, 0xb2, fileType.value, fileId])
         fileSizeInBytes = int.from_bytes(self._panel.readBytes(4), byteorder='little', signed=False)
         if fileSizeInBytes == 0:
@@ -55,10 +54,9 @@ class Filesystem:
                 print('Downloading {} {} from panel filesystem to {}...'.format(fileType.name, fileId, outputFilename))
                 open(outputFilename, 'wb').write(buffer)
                 print('done!')
-        if previousBaudRate != 115200:
-            self._panel.setBaudRate(previousBaudRate)
         return None if error else buffer
-    
+
+    @useHighSpeedDecorator 
     def _upload(self, header, data):
         self._panel.resetInputState()
         if len(header) == 0 or len(data) == 0:
@@ -66,9 +64,6 @@ class Filesystem:
             return
         error = False
         #print("header: {} . len(data): {}".format(header, len(data)))
-        previousBaudRate = self._panel.getBaudRate()
-        if previousBaudRate != 115200:
-            self._panel.setBaudRate(115200)
         def expectKey(panel, expectedKey):
             readKey = panel.readBytes(1)
             #print("{} {}".format(readKey,expectedKey))
@@ -97,9 +92,6 @@ class Filesystem:
                     break
                 self._panel.writeBytes(b'\x01')
             print("")
-
-        if previousBaudRate != 115200:
-            self._panel.setBaudRate(previousBaudRate)
         return not error
 
     def uploadFont(self, inputFilename, fileId):
@@ -121,18 +113,14 @@ class Filesystem:
     
     def rm(self, fileType, refId):
         self._panel.writeBytes([0xfe, 0xad, fileType.value, refId])
-        
+
+    @useHighSpeedDecorator 
     def downloadFS(self, outputFilename):
         self._panel.resetInputState()
-        previousBaudRate = self._panel.getBaudRate()
-        if previousBaudRate != 115200:
-            self._panel.setBaudRate(115200)
         self._panel.writeBytes([0xfe, 0x30])
         filesystemSize = int.from_bytes(self._panel.readBytes(4), byteorder='little', signed=False)
         print('Dumping panel filesystem to {}...'.format(outputFilename))
         open(outputFilename, 'wb').write(self._panel.readBytes(filesystemSize))
-        if previousBaudRate != 115200:
-            self._panel.setBaudRate(previousBaudRate)
         print('done!')
 
     def uploadFS(self, inputFilename):
