@@ -80,7 +80,7 @@ class Demo:
         deltaX = int(Graphics.PANEL_WIDTH / numberOfBars)
         for i in range(0, Graphics.PANEL_WIDTH, deltaX):
             index = self._panel.barGraphs.addBarGraph(i, 0,
-                                                      i+deltaX-1, Graphics.PANEL_HEIGHT,
+                                                      deltaX-1, Graphics.PANEL_HEIGHT,
                                                       Direction(Direction.VERTICAL_BOTTOM_TO_TOP))
         scaler = 1/1.3
         for i in range(changesCount):
@@ -106,6 +106,7 @@ class Demo:
 
 def main(port):
     myPanel = PyMOPanel(port=port)
+    myPanel.setBaudRate(19200)
     myPanel.setBaudRate(115200)
     demo = Demo(myPanel)
 

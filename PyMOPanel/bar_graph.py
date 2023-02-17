@@ -27,23 +27,23 @@ class BarGraphManager:
         self._barGraphs = []
         self._panel = panel
     # add bar graph. Returns index, or raise exception if full
-    def addBarGraph(self, x0, y0, x1, y1, direction):
+    def addBarGraph(self, x0, y0, width, height, direction):
         if len(self._barGraphs) == BarGraphManager.MAX_NUMBER_OF_BARS:
             raise Exception("Cannot have more than {} bars".format(BarGraphManager.MAX_NUMBER_OF_BARS))
         self._barGraphs.append(BarGraph(x0,
                                         y0,
-                                        x1,
-                                        y1,
+                                        x0+width,
+                                        y0+height,
                                         direction))
         index = len(self._barGraphs)-1
         # init bar graph
         self._panel.writeBytes([0xfe, 0x67,
                          index,
                          direction.value,
-                         x0,
-                         y0,
-                         x1,
-                         y1])
+                         self._barGraphs[-1]._x0,
+                         self._barGraphs[-1]._y0,
+                         self._barGraphs[-1]._x1,
+                         self._barGraphs[-1]._y1])
         return index
     
     def setBarGraphValue(self, index, value):

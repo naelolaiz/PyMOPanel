@@ -70,7 +70,7 @@ class PyMOPanel:
     def getModuleType(self):
         self.writeBytes([0xfe, 0x37])
         module = self.readBytes(1)
-        if not module:
+        if not module or len(module)==0:
             return ""
         return  {0x01: "LCD0821",            0x02: "LCD2021",
                  0x05: "LCD2041",            0x06: "LCD4021",
@@ -107,4 +107,4 @@ class PyMOPanel:
                  0x58: "VK204-25-USB",       0x5B: "LK162-12-TC",
                  0x72: "GLK240128-25",       0x73: "LK404-25",
                  0x74: "VK404-25",           0x78: "GLT320240",
-                 0x79: "GLT480282",          0x7A: "GLT240128"}[module]
+                 0x79: "GLT480282",          0x7A: "GLT240128"}[module[0]]
