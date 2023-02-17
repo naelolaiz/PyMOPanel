@@ -6,6 +6,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
 **WORK IN PROGRESS**. It is currently just a basic script where I am testing and adding functionalities.
 
 ![Example](doc/output_lcd.gif? "example")
+![Example](doc/output_top.gif? "example of CPU and memory utilization monitor")
 
 ### TODO
  - separate Driver from Controller and Demo logic
