@@ -24,6 +24,10 @@ class Font:
         assert len(self._chars) == 1 + self._ascii_range[1] - self._ascii_range[0]
         return len(self._chars)
 
+    def getChar(self, charIndex):
+        assert charIndex < len(self._chars)
+        return self._chars[charIndex]
+
     def getHeaderSize(self):
         return 4
 

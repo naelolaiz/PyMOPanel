@@ -29,13 +29,13 @@ class Text:
     # text methods
     def print(self,
               text,
-              x0=None,
-              y0=None,
+              col=None,
+              row=None,
               font_ref_id=None):
         if font_ref_id:
             self.selectCurrentFont(font_ref_id)
-        if x0 != None and y0 != None:
-            self.setCursorMoveToPos(x0,y0)
+        if col != None and row != None:
+            self.setCursorMoveToPos(col, row)
         self._panel.writeBytes(bytes(text, 'UTF-8') if type(text) == str else text)
 
     def setFontMetrics(self,
@@ -43,7 +43,7 @@ class Text:
                        topMargin=0,
                        charSpacing=1,
                        lineSpacing=1,
-                       lastYRow=64):
+                       lastYRow=7):
         self._leftMargin  = sanitizeUint8(leftMargin)
         self._topMargin   = sanitizeUint8(topMargin)
         self._charSpacing = sanitizeUint8(charSpacing)
@@ -55,6 +55,20 @@ class Text:
                                 self._charSpacing,
                                 self._lineSpacing,
                                 self._lastYRow])
+    def getLeftMargin(self):
+        return self._leftMargin
+
+    def getTopMargin(self):
+        return self._topMargin
+
+    def getCharSpacing(self):
+        return self._charSpacing
+
+    def getLineSpacing(self):
+        return self._lineSpacing
+
+    def getlastYRow(self):
+        return self._lastYRow
 
     def setBoxSpaceMode(self, value):
         self._boxSpaceModeEnabled = value
