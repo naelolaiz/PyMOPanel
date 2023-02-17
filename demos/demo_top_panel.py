@@ -54,7 +54,6 @@ def main(port):
                                       Direction(Direction.HORIZONTAL_LEFT_TO_RIGHT))
         yOffset += lineSpacing + heightBars
 
-                                      
     # last line show mem usage
     myPanel.text.print("mem.:     %", col=0, row=cpuToShowCount+1)
     myPanel.barGraphs.addBarGraph(xOffset,  yOffset,
@@ -62,8 +61,7 @@ def main(port):
                                   Direction(Direction.HORIZONTAL_LEFT_TO_RIGHT))
 
     while True:
-        cpu_percentage_per_cpu = psutil.cpu_percent(1, percpu=True)
-        total_percentage_cpu = sum(cpu_percentage_per_cpu) / len(cpu_percentage_per_cpu)
+        cpu_percentage_per_cpu = psutil.cpu_percent(0.3, percpu=True)
         memory_percentage_usage = psutil.virtual_memory().percent
         for cpuNr in range(cpuToShowCount):
             myPanel.barGraphs.setBarGraphValue(cpuNr, cpu_percentage_per_cpu[cpuNr] / 100)
@@ -72,7 +70,7 @@ def main(port):
         myPanel.barGraphs.setBarGraphValue(cpuToShowCount,  memory_percentage_usage/ 100)
         myPanel.text.print("{:5.1f}".format(memory_percentage_usage), col=5, row=cpuToShowCount+1)
             
-        time.sleep(1)
+        time.sleep(0.3)
 
 if __name__ == '__main__':
     port = argv[1] if len(argv) == 2 else '/dev/ttyUSB0'
