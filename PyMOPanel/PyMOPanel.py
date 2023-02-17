@@ -10,12 +10,12 @@ from .filesystem import Filesystem
 from time import sleep
 
 class PyMOPanel:
-    def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200):
+    def __init__(self, port = '/dev/ttyUSB0', baudrate = 19200, timeout = 0.3):
         self._port = port
         self._baudrate = baudrate
         self._serialSendLock = Lock()
         self._serialReceiveLock = Lock()
-        self._serialHandler = serial.Serial(port=port, baudrate=baudrate)
+        self._serialHandler = serial.Serial(port=port, baudrate=baudrate, timeout = timeout)
         if not self._serialHandler.is_open:
             raise Exception("MatrixOrbital device not found")
         self.screen = Screen(self)

@@ -63,10 +63,8 @@ class Filesystem:
         previousBaudRate = self._panel.getBaudRate()
         if previousBaudRate != 115200:
             self._panel.setBaudRate(115200)
-        # TODO: add timeout
         def expectKey(panel, expectedKey):
             readKey = panel.readBytes(1)
-            #print("{} : {}".format(readKey,expectedKey))
             return readKey == expectedKey
 
         # send header and expect the confirmation byte
