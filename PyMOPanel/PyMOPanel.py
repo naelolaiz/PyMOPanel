@@ -42,7 +42,7 @@ class PyMOPanel:
         return self._serialHandler.read(requestedBytesCount)
 
     def resetInputState(self):
-        self.clearKeyBuffer()
+        self.keyboard.clearKeyBuffer()
         self._serialHandler.reset_input_buffer()
         
     # setup

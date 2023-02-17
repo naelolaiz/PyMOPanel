@@ -1,4 +1,5 @@
 from enum import Enum
+from sys import stdout
 from .font import Font
 
 class FileType(Enum):
@@ -59,7 +60,12 @@ class Filesystem:
         return None if error else buffer
     
     def _upload(self, header, data):
+        self._panel.resetInputState()
+        if len(header) == 0 or len(data) == 0:
+            print("empty header or data. aborting upload")
+            return
         error = False
+        #print("header: {} . len(data): {}".format(header, len(data)))
         previousBaudRate = self._panel.getBaudRate()
         if previousBaudRate != 115200:
             self._panel.setBaudRate(115200)
@@ -78,16 +84,19 @@ class Filesystem:
     
             # send data byte per byte, check the echoed byte from the panel, and send a confirmation byte before sending the next one from the buffer
             for i,b in enumerate(data):
+                #print(i)
                 # each 10 bytes update progress bar
-                #if i%10 == 0:
+                if i%10 == 0:
+                     stdout.write('.')
                 #    stdout.write("[{:{}}] {:.1f}%".format("="*i, 10, (100/10)*i))
-                #    stdout.flush()
+                     stdout.flush()
                 self._panel.writeBytes(b.to_bytes(length=1, byteorder='little'))
                 if not expectKey(self._panel, b.to_bytes(length=1, byteorder='little')):
                     print("error uploading file")
                     error = True
                     break
                 self._panel.writeBytes(b'\x01')
+            print("")
 
         if previousBaudRate != 115200:
             self._panel.setBaudRate(previousBaudRate)
@@ -114,6 +123,7 @@ class Filesystem:
         self._panel.writeBytes([0xfe, 0xad, fileType.value, refId])
         
     def downloadFS(self, outputFilename):
+        self._panel.resetInputState()
         previousBaudRate = self._panel.getBaudRate()
         if previousBaudRate != 115200:
             self._panel.setBaudRate(115200)
@@ -128,6 +138,7 @@ class Filesystem:
     def uploadFS(self, inputFilename):
         bufferToWrite = open(inputFilename, 'rb').read()
         bufferSize = len(bufferToWrite)
+        print( bufferSize)
         assert bufferSize <= 16384
         header = bytes([0xfe, 0xb0]) + bufferSize.to_bytes(length=4, byteorder='little')
         return self._upload(header, bufferToWrite)
