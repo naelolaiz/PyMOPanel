@@ -84,7 +84,6 @@ class Font:
         open(outputFilename, 'w').write(pprint.pformat(self.toDictOfUnpackedNumpyArray()).replace(" array", "\narray"))
 
     def fromBuffer(inputBuffer):
-        print(len(inputBuffer))
         if not inputBuffer or len(inputBuffer) == 0:
             print("Aborting font import of empty buffer")
             return 
