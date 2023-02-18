@@ -43,9 +43,6 @@ def main(port):
     cpu_count = psutil.cpu_count()
     cpu_to_show_count = min(number_of_lines-1, cpu_count)
 
-    bar_height = int(Graphics.PANEL_HEIGHT / number_of_lines)
-
-
     left_margin = panel.text.getLeftMargin()
     top_margin = panel.text.getTopMargin()
     char_spacing = panel.text.getCharSpacing()
@@ -55,7 +52,9 @@ def main(port):
     text_length_in_chars = len(template_for_cpu_caption.format(1))
     text_width_in_pixels = font_to_use.getNominalWidth() * text_length_in_chars + char_spacing * (text_length_in_chars-1)
 
+    bar_height = int(Graphics.PANEL_HEIGHT / number_of_lines)
     bar_width = Graphics.CENTER_X - text_width_in_pixels
+    assert bar_width > 0
 
     offset_x = left_margin + text_width_in_pixels + 4
     offset_y = top_margin
