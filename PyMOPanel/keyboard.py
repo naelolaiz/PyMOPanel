@@ -65,16 +65,18 @@ class KeyboardManager:
         self.setAutoRepeatKeyMode(autoRepeatKeyMode)
         self.setDebounceTime(debounceTimeInTicksOf6_554ms)
 
-    def enableKeyboardControllingContrastAndBrightness(self):
-        self.ThreadSerialListener._customCallbackForDataReceived = self.ThreadSerialListener.brightnessAndContrastControlCallback
-        self.ThreadSerialListener._saveIgnoredKeys = True
-        self._threadedSerialListener = serial.threaded.ReaderThread(self._serialHandler, self.ThreadSerialListener)
-        self._threadedSerialListener.start()
-        self.setAutoTransmitKeyPressed(True)
-
-    def disableKeyboardControllingContrastAndBrightness(self):
-        self._threadedSerialListener.stop()
-        self.ThreadSerialListener._customCallbackForDataReceived = None
+    def controlBrighnessAndContrastByKeypad(self, value):
+        if value:
+            # enable serial listener
+            self.ThreadSerialListener._customCallbackForDataReceived = self.ThreadSerialListener.brightnessAndContrastControlCallback
+            self.ThreadSerialListener._saveIgnoredKeys = True
+            self._threadedSerialListener = serial.threaded.ReaderThread(self._serialHandler, self.ThreadSerialListener)
+            self._threadedSerialListener.start()
+            self.setAutoTransmitKeyPressed(True)
+        else:
+            # disable serial listener
+            self._threadedSerialListener.stop()
+            self.ThreadSerialListener._customCallbackForDataReceived = None
 
     # keypad methods
     def setAutoTransmitKeyPressed(self, state):

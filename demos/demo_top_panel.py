@@ -36,7 +36,7 @@ def main(port):
     print ("Using font id {}".format(font_id_to_use))
     panel.text.selectCurrentFont(font_id_to_use)
 
-    panel.keyboard.enableKeyboardControllingContrastAndBrightness()
+    panel.keyboard.controlBrighnessAndContrastByKeypad(True)
     number_of_lines = int(Graphics.PANEL_HEIGHT / font_to_use.getHeight())
 
     # show layout for up to lines-1 cpus

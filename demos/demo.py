@@ -114,7 +114,7 @@ def main(port):
     print("Version number: {}. Module type: {}".format(myPanel.getVersionNumber(), myPanel.getModuleType()))
 
     # enable controlling brightness and contrast by the keyboard
-    myPanel.keyboard.enableKeyboardControllingContrastAndBrightness()
+    myPanel.keyboard.controlBrighnessAndContrastByKeypad(True)
 
     # turn screen on
     myPanel.screen.clear()
@@ -149,7 +149,7 @@ def main(port):
     demo.runDemoSpirals(40)
     
     # stop keyboard thread 
-    myPanel.keyboard.disableKeyboardControllingContrastAndBrightness()
+    myPanel.keyboard.controlBrighnessAndContrastByKeypad(False)
 
     # start keyboard demo
     demo.runDemoPressedKeys(5)
