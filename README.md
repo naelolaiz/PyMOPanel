@@ -7,8 +7,13 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
 
 ![Example](doc/output_lcd.gif? "example")
 ![Example](doc/output_top.gif? "example of CPU and memory utilization monitor")
-
-### TODO
+## Contents
+ - PyMOPanel: the module. The main class is PyMOPanel, which connects to the port(="/dev/ttyUSB0") argument
+ - demos: simple examples using the module functionalities
+   - demo.py: general demo (graphics, text, keys, bar graphs)
+   - demo_filesystem.py: filesystem demo (dumping filesystem, listing and downloading files)
+   - demo_top_panel.py: demo using bar graphs to show cpu + memory usage
+## TODO
  - separate Driver from Controller and Demo logic
    - [x] ~classes~
    - [x] files
