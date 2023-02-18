@@ -10,7 +10,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
 ## Contents
  - PyMOPanel: the module. The main class is PyMOPanel, which connects to the port(="/dev/ttyUSB0") argument
  - demos: simple examples using the module functionalities
-   - [demo.py](demos/demo.py): general demo (graphics, text, keys, bar graphs)
+   - [demo.py](demos/demo.py): general demo (graphics, text, keys, GPO -a.k.a. LEDs- bar graphs)
    - [demo_filesystem.py](demos/demo_filesystem.py): filesystem demo (dumping filesystem, listing and downloading files)
    - [demo_top_panel.py](demos/demo_top_panel.py): demo using bar graphs to show cpu + memory usage
 ## TODO
