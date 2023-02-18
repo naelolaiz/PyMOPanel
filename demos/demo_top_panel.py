@@ -37,50 +37,50 @@ def main(port):
     panel.text.selectCurrentFont(font_id_to_use)
 
     panel.keyboard.enableKeyboardControllingContrastAndBrightness()
-    numberOfLines = int(Graphics.PANEL_HEIGHT / font_to_use.getHeight())
+    number_of_lines = int(Graphics.PANEL_HEIGHT / font_to_use.getHeight())
 
     # show layout for up to lines-1 cpus
-    cpuCount = psutil.cpu_count()
-    cpuToShowCount = min(numberOfLines-1, cpuCount)
+    cpu_count = psutil.cpu_count()
+    cpu_to_show_count = min(number_of_lines-1, cpu_count)
 
-    heightBars = int(Graphics.PANEL_HEIGHT / numberOfLines)
+    bar_height = int(Graphics.PANEL_HEIGHT / number_of_lines)
 
 
-    leftMargin = panel.text.getLeftMargin()
-    topMargin = panel.text.getTopMargin()
-    charSpacing = panel.text.getCharSpacing()
-    lineSpacing = panel.text.getLineSpacing()
+    left_margin = panel.text.getLeftMargin()
+    top_margin = panel.text.getTopMargin()
+    char_spacing = panel.text.getCharSpacing()
+    line_spacing = panel.text.getLineSpacing()
 
-    templateForCPUCaption = "cpu{}:     %"
-    textLengthInChars = len(templateForCPUCaption.format(1))
-    textWidthInPixels = font_to_use.getNominalWidth() * textLengthInChars + charSpacing * (textLengthInChars-1)
+    template_for_cpu_caption = "cpu{}:     %"
+    text_length_in_chars = len(template_for_cpu_caption.format(1))
+    text_width_in_pixels = font_to_use.getNominalWidth() * text_length_in_chars + char_spacing * (text_length_in_chars-1)
 
-    widthBars = Graphics.CENTER_X - textWidthInPixels
+    bar_width = Graphics.CENTER_X - text_width_in_pixels
 
-    xOffset = leftMargin + textWidthInPixels + 4
-    yOffset = topMargin
-    for cpuNr in range(cpuToShowCount):
-        panel.text.print(templateForCPUCaption.format(cpuNr), col=0, row=cpuNr+1)
-        panel.barGraphs.addBarGraph(xOffset,  yOffset,
-                                      widthBars, heightBars,
+    offset_x = left_margin + text_width_in_pixels + 4
+    offset_y = top_margin
+    for cpu_number in range(cpu_to_show_count):
+        panel.text.print(template_for_cpu_caption.format(cpu_number), col=0, row=cpu_number+1)
+        panel.barGraphs.addBarGraph(offset_x,  offset_y,
+                                      bar_width, bar_height,
                                       Direction(Direction.HORIZONTAL_LEFT_TO_RIGHT))
-        yOffset += lineSpacing + heightBars
+        offset_y += line_spacing + bar_height
 
     # last line show mem usage
-    panel.text.print("mem.:     %", col=0, row=cpuToShowCount+1)
-    panel.barGraphs.addBarGraph(xOffset,  yOffset,
-                                  widthBars, heightBars,
+    panel.text.print("mem.:     %", col=0, row=cpu_to_show_count+1)
+    panel.barGraphs.addBarGraph(offset_x,  offset_y,
+                                  bar_width, bar_height,
                                   Direction(Direction.HORIZONTAL_LEFT_TO_RIGHT))
 
     while True:
         cpu_percentage_per_cpu = psutil.cpu_percent(0.3, percpu=True)
         memory_percentage_usage = psutil.virtual_memory().percent
-        for cpuNr in range(cpuToShowCount):
-            panel.barGraphs.setBarGraphValue(cpuNr, cpu_percentage_per_cpu[cpuNr] / 100)
-            panel.text.print("{:5.1f}".format(cpu_percentage_per_cpu[cpuNr]), col= 5, row=cpuNr+1)
+        for cpu_number in range(cpu_to_show_count):
+            panel.barGraphs.setBarGraphValue(cpu_number, cpu_percentage_per_cpu[cpu_number] / 100)
+            panel.text.print("{:5.1f}".format(cpu_percentage_per_cpu[cpu_number]), col= 5, row=cpu_number+1)
         
-        panel.barGraphs.setBarGraphValue(cpuToShowCount,  memory_percentage_usage/ 100)
-        panel.text.print("{:5.1f}".format(memory_percentage_usage), col=5, row=cpuToShowCount+1)
+        panel.barGraphs.setBarGraphValue(cpu_to_show_count,  memory_percentage_usage/ 100)
+        panel.text.print("{:5.1f}".format(memory_percentage_usage), col=5, row=cpu_to_show_count+1)
             
         time.sleep(0.3)
 
