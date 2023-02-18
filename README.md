@@ -33,6 +33,7 @@ Manual: https://www.mouser.com/datasheet/2/255/GLK19264-7T-1U-5080.pdf
  - bar graphs
    - improve code (allow deleting, ...)
  - fonts
+   - FontManager (caching the current set font, downloading to cache font attributes)
    - [x] ~font to ascii numpy arrays~
    - [x] ~ascii numpy arrays to font~
    - [x] ~downloader~
