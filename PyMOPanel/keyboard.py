@@ -92,9 +92,9 @@ class KeyboardManager:
             command_list = [0xfe, 0x7e, mode.value]
         self._panel.writeBytes(command_list)
 
-    def pollKeyPressed(self) :
+    def pollKeyPressed(self):
         self._panel.writeBytes([0xfe, 0x26])
-        return self.readBytes(self._serialHandler.in_waiting)
+        return self._panel.readBytes(self._serialHandler.in_waiting)
 
     def clearKeyBuffer(self):
         self._panel.writeBytes([0xfe, 0x45])

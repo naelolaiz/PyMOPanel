@@ -1,5 +1,5 @@
 import serial
-from threading import Lock 
+from threading import Lock
 from .keyboard import KeyboardManager
 from .bar_graph import BarGraphManager
 from .screen import Screen
@@ -15,9 +15,13 @@ class PyMOPanel:
         self._baudrate = baudrate
         self._serialSendLock = Lock()
         self._serialReceiveLock = Lock()
-        self._serialHandler = serial.Serial(port=port, baudrate=baudrate, timeout = timeout)
-        if not self._serialHandler.is_open:
-            raise Exception("MatrixOrbital device not found")
+        if port is None:
+            from .usb_transport import USBSerial
+            self._serialHandler = USBSerial(timeout=timeout)
+        else:
+            self._serialHandler = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+            if not self._serialHandler.is_open:
+                raise Exception("MatrixOrbital device not found")
         self.screen = Screen(self)
         self.text   = Text(panel       = self,
                            fontRefId   = 0,

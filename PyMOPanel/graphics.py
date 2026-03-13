@@ -1,4 +1,7 @@
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 from typing import Final
 import time
 from .helpers import sanitizeUint8, useHighSpeedDecorator
